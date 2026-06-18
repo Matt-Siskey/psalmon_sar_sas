@@ -1,0 +1,450 @@
+---
+title: "Pacific Salmon CWT-based Smolt-Adult-Return"
+format: 
+  html:
+    toc: true
+    theme: sketchty
+    embed-resources: true
+    self-contained-math: true
+editor: visual
+echo: false
+params:
+  brood_yr: 2024
+  sp: "1" #"Coho" "Chum" "Pink"
+  hatchery: "3F42001  270168 H"
+---
+
+\
+\
+
+## Introduction
+
+This script uses WDFW hatchery release data and hatchery rack return data to fit regional return-per-release models for chinook, coho, chum, and pink salmon. Annual age composition data from each region are first used to categorize rack returns into brood years. These returns are then paired with stage-specific release data and used in non-linear models to predict survival at various population producitivity states. A suite of covariates are introduced to the model fitting procedure to explore influences on the return-per-release relationship, including ocean habitat variables (temperature, salinity, NPGO, ONI, PDO, and ALBSA) and inter-specific hatchery production (i.e., a competition index).
+
+## Setup
+
+Use this section to load libraries, set directories, and designate any life history or geographic groupings. Then read in the data, calculate brood year returns, and format for model fitting.
+
+```{r setup, message=FALSE, warning=FALSE}
+##############################
+### Clear workspace & load libraries
+# rm(list=ls())
+
+# install rmisr
+# options(download.file.method = "wininet")
+# library(devtools)
+# devtools::install_github("MattCallahan-NOAA/rmisr", force = TRUE)
+
+# Load packages, several aren't used in this workflow
+p<- c("dplyr", "RCurl", "purrr", "tibble", "stringr", "DBI", "readr", "rvest", "RSQLite", 
+      "tidyverse", "knitr", "kableExtra", "xtable", "gtable", "gt", "webshot2", "ggplot2",
+      "RColorBrewer","httr", "jsonlite", "magrittr", "rmisr", "janitor", "keyring")
+# library(RJSONIO);library(RCurl);library(odbc);library(RODBC);library(mgcv);library(nlme);library(ggh4x);library(ggthemes);
+# library(MuMIn);library(Hmisc);library(scales);library(lubridate);library(stringi);library(rmdformats);library(tidyr);library(data.table);
+
+# Pass list of packages in object p. Then we pass object p using lapply to load the previously required packages
+lapply(p, require, character.only = TRUE)
+
+# Supply API key through keyring to access RMIS server & maintain credential security
+token <- key_get("rmis_api") # Kris had a "token" in key_get too -- whatfer?
+
+
+##############################
+### Set up drives & controls
+my_drive <-paste0("C:/Users/sism1477/OneDrive - Washington State Executive Branch Agencies/")
+share_drive <-paste0(my_drive,"DFW-Team FP Westside Hatchery MandE - R/")
+proj_drive <-paste0(share_drive,"psalmon_lewis_CWTsar/")
+`%nin%`        <-negate(`%in%`) # create an exclude operator
+source(paste0(proj_drive,"Code/Functions/functions.R",sep="")) #Source functions for use below
+
+
+##############################
+# ### Species designations
+# # PSC & WDFW use different species coding systems; release/RMIS data use PSC; so use common names
+# # PSC species codes: 1=chinook="CK"; 2=coho="CO"; 3=steelhead="SH"; 4=sockeye="SO"; 5=chum="CH"; 6=pink="PK"; 7=masu; 8=cutthroat="CT"; 9=atlantic salmon
+# sp_name_list <-c("chinook")
+# 
+# ### Stage designations
+# use length threshold instead of reported stages in RMIS
+sy_stages    <-c("E","F")
+yrl_stages   <-c("G","Y")
+smolt_stages <-c("P","S")
+# 
+# ### WRIA groups
+# # ps_regions <-c("nowa","nps","mps","sps","hood","juan")
+# # puget      <-as.character(seq(1,19,1))
+# # juan       <-as.character(seq(18,19,1))
+# # hood       <-as.character(seq(15,17,1))
+# # sps        <-as.character(seq(11,14,1))
+# # mps        <-as.character(seq(8,10,1))
+# # nps        <-as.character(seq(3,7,1))
+# # nowa       <-as.character(seq(1,2,1))
+# # coast_regions <-c()
+# # wacoast    <-as.character(seq(20,25,1))
+# col_regions <-c()
+# columbia   <-as.character(seq(26,62,1))
+# 
+# wria_region <-c("1"="nowa","2"="nowa",
+#                 "3"="nps","4"="nps","5"="nps","6"="nps","7"="nps",
+#                 "8"="mps","9"="mps","10"="mps",
+#                 "11"="sps","12"="sps","13"="sps","14"="sps",
+#                 "15"="hood","16"="hood","17"="hood",
+#                 "18"="juan","19"="juan",
+#                 "20"="nwc","21"="nwc",
+#                 "22"="gray","23"="gray",
+#                 "24"="wilp",
+#                 "25"="locr","26"="locr","27"="locr","28"="locr",
+#                 "29"="cecr","30"="cecr","31"="cecr",
+#                 "32"="upcr",
+#                 "33"="snak","34"="snak","35"="snak"
+#                 )
+
+# filter(hatt, hatchery_name=="LEWIS RIVER HATCHERY")$hatchery_location_code # 3F42001  270168 H
+# filter(hatt, hatchery_name=="MERWIN HATCHERY")$hatchery_location_code # 3F42001  270168 H02
+# filter(hatt, hatchery_name=="SPEELYAI HATCHERY")$hatchery_location_code # 3F42001  270430 H
+
+```
+
+## Pull data, and format
+
+\[Do we want to use SAR or SAS/survival? I vote SAS/survival\]
+
+Pull location, release, and recovery data from RMIS server for the hatchery and species/stock of interest.Smolt-adult survival (SAS) is calculated as the proportion of released fish for each brood year that survive to adulthood (\>xx cm?) and return (rack or spawning ground), stray, or are harvested by fisheries. Data used to calculate SAS come from the RMIS CWT tag database.
+
+For each brood year, the number of fish released as smolts is reported by the hatchery along with a mark rate for that release(?).
+
+The brood year release will not all return to the rack, and those fish that do return to the rack will not all return the same year. Once the window for a brood year's return has finished (6? years post-release), the SAR can be calculated. However, if the brood year release is not 100% marked, an expansion must be done on the recovery data based on the estimated as the summation of tagged fish released expanded by the hatchery program's mark rate (?).
+
+Fish that ended up on spawning grounds...
+
+Fish harvested by fisheries....
+
+Fish that strayed into other terminal areas....
+
+Smolt-adult return (SAR) is calculated as the proportion of released fish that return to a designated location (e.g., the hatchery rack). Data used to calculate SAR come from
+
+```{r data, messsage=FALSE, warning=FALSE}
+##############################
+### Generate data for model fitting
+# retrieve all location data from rmis
+loc_all <- get_location(token = token)
+
+#split location data into LUTS by location type. This could be a future application of a helper function
+# Location Type 4 = release site, Location Type 3 = Hatchery/Facility; Location Type 1 = Recovery Site  
+
+#release LUT
+relt <- loc_all |> 
+  filter(location_type == 4) |> 
+  rename(release_location_name = name,
+         release_location_description = description,
+         release_location_code = location_code) |> 
+  select(-c(id, format_version, record_code))
+
+##recovery LUT
+rect <- loc_all |> 
+  filter(location_type == 1) |> 
+  rename(recovery_location_name = name,
+         recovery_description = description,
+         recovery_location_code = location_code) |> 
+  select(-c(id, format_version, record_code))
+
+#hatchery LUT
+hatt <- loc_all |> 
+  filter(location_type == 3) |> 
+  rename(hatchery_name = name,
+         hatchery_description = description,
+         hatchery_location_code = location_code) |> 
+  select(-c(id, format_version, record_code))
+
+#stock LUT
+stockt <- loc_all |> 
+  filter(location_type == 5) |> 
+  rename(stock_name = name,
+         stock_location_code = location_code,
+         stock_description = description) |>
+  select(-c(id, format_version, record_code))
+
+
+##############################
+### [RELEASES] Pull in RMIS release data
+# rel_wide <-get_releases(drive, sy_stages, yrl_stages, smolt_stages)
+
+### hatchery of interest location codes, found on the hatt data frame
+# 180k+ release records total
+rel_dat <-get_release(token = token, 
+                      # brood_year = params$brood_yr,
+                      # species = params$sp,
+                      hatchery_location_code = params$hatchery)
+
+rel_dat[is.na(rel_dat$release_stage),"release_stage"] <- "no_stage"
+
+rel_dat[is.na(rel_dat$cwt_1st_mark_count),"cwt_1st_mark_count"] <-0
+rel_dat$cwt_1st_mark_count <-as.numeric(rel_dat$cwt_1st_mark_count)
+rel_dat[is.na(rel_dat$cwt_2nd_mark_count),"cwt_2nd_mark_count"] <-0
+rel_dat$cwt_2nd_mark_count <-as.numeric(rel_dat$cwt_2nd_mark_count)
+rel_dat[is.na(rel_dat$non_cwt_1st_mark_count),"non_cwt_1st_mark_count"] <-0
+rel_dat$non_cwt_1st_mark_count <-as.numeric(rel_dat$non_cwt_1st_mark_count)
+rel_dat[is.na(rel_dat$non_cwt_2nd_mark_count),"non_cwt_2nd_mark_count"] <-0
+rel_dat$non_cwt_2nd_mark_count <-as.numeric(rel_dat$non_cwt_2nd_mark_count)
+ 
+rel_dat$event_released <-rel_dat$cwt_1st_mark_count + 
+  rel_dat$cwt_2nd_mark_count + 
+  rel_dat$non_cwt_1st_mark_count + 
+  rel_dat$non_cwt_2nd_mark_count
+
+rel_dat$release_stage <-as.factor(rel_dat$release_stage)
+rel_agg <-aggregate(event_released~species+brood_year+release_stage, data=rel_dat, FUN=sum) # +release_location_rmis_region
+rel_wide <-rel_agg %>% pivot_wider(names_from = release_stage, values_from = event_released) # %>% filter(release_stage!="") 
+rel_wide[is.na(rel_wide)] <-0
+
+rel_wide$sy_index <-rowSums(rel_wide[,sy_stages])
+rel_wide$yrl_index <-rowSums(rel_wide[,yrl_stages])
+rel_wide$smolt_index <-rowSums(rel_wide[,smolt_stages])
+names(rel_wide)[names(rel_wide) == 'brood_year'] <- 'brood_yr'
+
+rel_wide$total_released <-rel_wide$sy_index + rel_wide$yrl_index + rel_wide$smolt_index + rel_wide$no_stage
+specCode_rename_rel <-c("1"="chinook", "2"="coho", "3"="steelhead", "4"="sockeye", "5"="chum", "6"="pink")
+rel_wide$species_name <-as.character(specCode_rename_rel[rel_wide$species])
+
+
+##############################
+# [RETURNS] Pull in WDFW FishBooks return data
+# returns_HOR_agg <-get_returns(drive, wria_region)
+
+# use the tag codes from the release query to grab recoveries; pull capped at 500k records
+tags <- rel_dat$tag_code_or_release_id
+rec_list <-list()
+
+for(t in 1:length(tags)){
+  rec_list[[t]] <-get_recovery(token = token, tag_code = tags[t])
+}
+names(rec_list) <-tags
+rec_dat <-map_df(rec_list, ~as.data.frame(.))
+
+# raw fish count
+nrow(filter(rec_dat))
+
+# aggregate data by recovery location/fishery, yr, species
+rec_dat_agg <-aggregate(number_cwt_estimated~run_year+recovery_location_code+fishery+species, data=rec_dat, FUN=sum)
+
+
+
+
+
+# Grab recovery location codes from recovery tag table to pair with recovery location table details
+rec_loc <-unique(rec_dat_agg$recovery_location_code)
+rec_loc_df <-filter(rect, recovery_location_code %in% rec_loc)
+
+# See how many recoveries occured across 'fishery' categories
+table(rec_dat_agg$fishery)
+
+### RMIS 'fishery' types
+# 10-19 Troll  
+# 20-29 Net and Seine  
+# 30-39 Aboriginal  
+# 40-49 Sport  
+# 50-59 Escapement  
+## 50 Hatchery rack
+## 52 Fish trap
+## 54 Spawning ground
+# 60-69 Test Fisheries  
+# 70-79 Juvenile Sampling  
+# 80-89 High Seas  
+# 90-99 Miscellaneous 
+
+##############################
+### Correct the instances of number_cwt_estimated == c(0,NA)
+prob_child <-filter(rec_dat_agg, number_cwt_estimated == 0 | number_cwt_estimated == "NA")
+good_child <-filter(rec_dat_agg, number_cwt_estimated != 0)
+# nrow(rec_dat_agg);nrow(good_child);nrow(prob_child)
+
+# Fishery harvest: 
+# (1) 
+rec_dat_fishery <-filter(prob_child, fishery %in% c(seq(10,49,1),seq(80,89,1)))
+nrow(rec_dat_fishery)
+
+# Hatchery rack
+rec_dat_rack <-filter(prob_child, fishery == 50)
+nrow(rec_dat_rack)
+
+# Spawning ground
+rec_dat_sgs <-filter(prob_child, fishery == 54)
+nrow(rec_dat_sgs)
+
+# fishery-independent survey & misc
+rec_dat_misc <-filter(prob_child, fishery %in% c(51,52,53,seq(55,79,1),seq(90,99,1)))
+nrow(rec_dat_misc)
+
+
+
+
+
+
+
+# Add species_names
+# RMIS species: 1 = chinook, 2 = coho, 3 = steelhead
+# specCode_rename_ret <-c("CK"="chinook", "SO"="sockeye", "SH"="steelhead", "CO"="coho", "CT"="cutthroat", "CH"="chum", "PK"="pink")
+# returns_HOR_agg$species_name <-as.character(specCode_rename_ret[returns_HOR_agg$species])
+
+
+##############################
+# CatchSample (exp)
+# rec_dat$catch_sample_id ==NA -> number_cwt_estimated==0
+## 1 fish expands to 0 fish
+# page 80 of rmis data spec explains expansion
+cs <-get_catchsample(token=token,
+                     catch_year=2011,
+                     species=2)
+
+##############################
+# Age data
+
+
+
+
+##############################
+# [FIT_DAT] Prepare datasets for model fitting
+# fit_dat <-make_fit_dat(rel_wide,age_comps,age_comps_w,returns_HOR_agg)
+
+
+
+```
+
+## Fit Return-per-release (RPR) models
+
+TEXT
+
+```{r model_fits}
+### Fit models for each species, stage, & spatial scale (RMIS region, statewide)
+# return-per-release 
+# log(survival) w/ covariate suite 
+
+### Loop thru these levels in the database to build mod_dat for fitting return~release models
+fit_dat_surv <-fit_dat %>%
+  filter(., brood_yr>=2005 & rel_stage %in% c("yrl_index","no_stage","total_released") & surv!="Inf" & surv>=0) %>%
+  left_join(cov_dat, by = "brood_yr")
+fit_dat_surv$region <-as.factor(fit_dat_surv$region)
+fits_sp <-list()
+
+for(sp in 1:length(sp_name_list)){
+  fits_w <-list()
+  
+  for(w in 1:length(ps_regions)){
+    ## filter data for model variants
+    # join covariate data to fish indices
+    fit_dat_sp_w <-fit_dat_surv %>% filter(species==sp_name_list[sp] & region==ps_regions[w])
+    # rel_stages <-unique(filter(fit_dat_sp_w, releases!=0)$rel_stage)
+    rel_stages <-c("total_released")
+    fits_st <-list()
+    
+    for(st in 1:length(rel_stages)){
+      fit_dat_st <-filter(fit_dat_sp_w, rel_stage == rel_stages[st])
+      
+      ### return-per-release
+      # linear
+      mod1 <-lm(returns~releases, data = fit_dat_st)
+      # glms
+      mod2 <-glm(returns~releases, data = fit_dat_st)
+      # gams
+      mod3 <-gam(returns ~ s(releases, k=5, bs = "cr"), data = fit_dat_st)
+      mod3 <-gamm(returns ~ s(releases, k=5, bs = "cr"), data = fit_dat_st)
+      
+      # ### survival
+      # # glms 
+      # mod4 <-glm(surv~releases, data = fit_dat_st)
+      # # gamms    
+      # mod5 <-gamm(returns ~ temp + salinity + NPGO + fry_pred_ps +
+      #                       s(releases, bs="tp") +
+      #                       s(region, k=length(unique(fit_dat_surv$region)), bs="re"),
+      #             data = filter(fit_dat_surv, rel_stage=="total_released"), method = "REML", 
+      #             family = gaussian(link="identity"), correlation = corAR1(form = ~brood_yr|region))
+      # mod6 <-gamm(surv ~ temp + salinity + NPGO + fry_pred_ps +
+      #                    s(releases, bs="tp") + 
+      #                    s(region, k=length(unique(fit_dat_surv$region)), bs="re"),
+      #             data = filter(fit_dat_surv, rel_stage=="total_released"), method = "REML", 
+      #             family = gaussian(link="identity"), correlation = corAR1(form = ~brood_yr|region))
+      
+      # summary(mod$gam)
+      # AIC(mod)
+      # draw(mod$gam, scales="fixed")
+      # mod_1  <- gamm(log(instant_m) ~ life_hist + chill_code + salish_seals + sst + salish_herring + npgo +
+      # # variant 1
+      # s(releases, by=pinks, bs="tp") +
+      # # variant 2 (w/ pink yr interaction)
+      # pinks + releases +
+      # te(year, releases_x_pinks, bs="tp") +
+      # # variant 3 (w/ pink yr interaction)
+      # pink_abundance + releases +
+      # te(year, releases_x_pink_ab, bs="tp") +
+      
+      fits_st[[st]] <-list(mod1,mod2,mod3,mod4,mod5,mod6,mod7,mod8)
+      names(fits_st[[st]]) <-c("mod1", "mod2", "mod3", "mod4", "mod5", "mod6", "mod7", "mod8")
+    }
+    names(fits_st) <-rel_stages
+    fits_w[[w]] <-fits_st
+  }
+  names(fits_w) <-ps_regions
+  fits_sp[[sp]] <-fits_w
+}
+names(fits_sp) <-sp_name_list
+```
+
+## Plot data & model results
+
+Use this section to plot ages, returns, releases, and returns-per-release relationships.
+
+```{r plot}
+### figures
+# ages
+ggplot()+
+  geom_point(data=age_comps_long,aes(x=return_yr,y=age,size=P_rya))+
+  ylab("Chinook Prop-at-age")+
+  xlab("Return Year")+
+  facet_wrap(.~region)+
+  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=1))
+
+# releases
+ggplot()+
+  geom_col(data=filter(rel_fit,species=="chinook" & region %in% ps_regions),
+           aes(x=as.numeric(brood_yr),y=releases, group=as.character(rel_stage)))+
+  scale_y_continuous(labels = label_number(suffix = "", scale = 1e-6)) +
+  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=1))+
+  facet_grid(region~as.character(rel_stage), scales="free")
+
+# returns
+ggplot()+
+  geom_col(data=filter(ret_fit,species=="chinook" & brood_yr>2000),
+           aes(x=as.numeric(brood_yr),y=returns))+
+  ylab("Chinook Returns")+
+  xlab("Brood Year")+
+  facet_grid(region~., scales="free")
+
+# returns~releases
+ggplot()+
+  geom_point(data=filter(fit_dat,species=="chinook" & rel_stage=="total_released" & returns!=0),
+             aes(x=releases/1e6, y=returns/1e3, group=as.character(region)))+
+  ylab("Returns (thousands)")+
+  xlab("Releases (millions)")+
+  facet_wrap(region~., scales="free")
+
+
+
+##### Figures to add #####
+# map
+
+# table of hatcheries, regions, number of year w/ survival data, number of ages
+rel_wide[] %>% 
+  kbl(row.names = TRUE, caption = "Table 1. Number of chinook ages over return years for Puget Sound RMIS regions.") %>%
+  kable_classic(full_width = F, position = "left", html_font = "Cambria", fixed_thead = T)
+
+
+# return, release, survival, & covariate time series multiplot
+
+# table of model variants
+
+# best model fits by region & data
+
+# effect sizes & posterior distributions
+
+
+```

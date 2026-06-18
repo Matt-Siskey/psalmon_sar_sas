@@ -1,0 +1,478 @@
+---
+title: "Pacific Salmon SAR & SAS Estimator"
+author: "Kris Warner & Matt Siskey"
+format: 
+  html:
+    toc: true
+    theme: sketchty
+    embed-resources: true
+    self-contained-math: true
+    code-tools: true
+    code-fold: true
+editor: visual
+echo: true
+params:
+  brood_yr: 2024
+  sp: "1" #"Coho" "Chum" "Pink"
+  hatchery: "3F42001^^270168^H"  #	3F42001  260002 H02; 3F42001  270168 H
+  yr_trim: true
+  yr_window: !expr c(seq(2013,2020,1)) 
+---
+
+## Setup
+
+This script uses WDFW hatchery release data and hatchery rack return data to fit program-specific return-per-release models for Pacific salmon. Release and return data are categorized by release size, release stage, release location and uniquely idetified by coded-wire-tag codes. Return-per-release time series are then fit to generalized additive models to summarize and identify potential significant covariates. The first chunk below loads libraries, sets directories, and sources any functions required for the analysis.
+
+```{r setup}
+##############################
+### Clear workspace & load libraries
+# rm(list=ls())
+# # First-time rmisr install
+# options(download.file.method = "wininet"); library(devtools); devtools::install_github("MattCallahan-NOAA/rmisr", force = TRUE)
+
+# Load packages, several aren't used in this workflow
+pacman::p_load(rmisr, dplyr, purrr, stringr, tidyverse, knitr, kableExtra, ggplot2, RColorBrewer, 
+               jsonlite, rmisr, janitor, keyring, mgcv, here, lubridate, tidygam, FSSgam, ggeffects)
+
+# Supply API key through keyring to access RMIS server & maintain credential security
+token <- key_get("rmis_api") # Kris had a "token" in key_get too -- whatfer?
+# set plotting theme
+theme_set(theme_minimal())
+
+##############################
+### Set up drives & controls
+my_drive    <-paste0("C:/Users/sism1477/OneDrive - Washington State Executive Branch Agencies/")
+share_drive <-paste0(my_drive,"DFW-Team FP Westside Hatchery MandE - R/")
+proj_drive  <-paste0(share_drive,"psalmon_sar_sas/")
+`%nin%`     <-negate(`%in%`) # create an exclude operator
+source(paste0(proj_drive,"functions/functions.R",sep="")) #Source functions for use below
+
+```
+
+## Pull data, and format
+
+This chunk pulls location, release, and recovery data from the RMIS server for the species and hatchery stock of interest. Smolt-adult return (SAR) is calculated as the proportion of released fish that return to a designated location (e.g., the hatchery rack). The brood year release will not all return to the rack, and those fish that do return to the rack will not all return the same year. Once the window for a brood year's return has finished (6? years post-release), the SAR can be calculated. However, if the brood year release is not 100% marked, an expansion must be done on the recovery data based on the estimated as the summation of tagged fish released expanded by the hatchery program's mark rate (?).
+
+Notes:
+
+-   Data filtering
+
+    -   Release data used excludes untagged release groups (i.e., tag_code_or_release_id begins with "!")
+    -   Recovery data only include CWT-tagged fish
+    -   Survival is calculated for tagged fish, then survival rate is applied to total release numbers to get the total return
+
+-   releases: event_released \<-cwt_1st_mark_count + cwt_2nd_mark_count
+
+-   returns: cwt_recovered \<-aggegrate(number_cwt_estimated \~ brood_year + tag_code, data = rec_dat, FUN = sum)
+
+```{r data, results='hide', echo=FALSE, message=FALSE, warning=FALSE}
+##############################
+### [RELEASES] Pull in RMIS release data
+### hatchery of interest location codes, found on the hatt data frame
+# 180k+ release records total
+rel_dat <-rmisr::get_release(token = token,
+                      species = params$sp,
+                      # brood_year = params$brood_yr,
+                      hatchery_location_code = params$hatchery)
+
+# nrow(filter(rel_dat, hatchery_location_code == "3F42001  270168 H"))
+# nrow(filter(rel_dat, hatchery_location_code == "3F42001^^270168^H"))
+# rel_dat <-filter(rel_dat, hatchery_location_code == params$hatchery)
+
+
+
+
+
+
+
+rel_dat[is.na(rel_dat$release_stage),"release_stage"] <- "no_stage"
+
+rel_dat[is.na(rel_dat$cwt_1st_mark_count),"cwt_1st_mark_count"] <-0
+rel_dat$cwt_1st_mark_count <-as.numeric(rel_dat$cwt_1st_mark_count)
+rel_dat[is.na(rel_dat$cwt_2nd_mark_count),"cwt_2nd_mark_count"] <-0
+rel_dat$cwt_2nd_mark_count <-as.numeric(rel_dat$cwt_2nd_mark_count)
+rel_dat[is.na(rel_dat$non_cwt_1st_mark_count),"non_cwt_1st_mark_count"] <-0
+rel_dat$non_cwt_1st_mark_count <-as.numeric(rel_dat$non_cwt_1st_mark_count)
+rel_dat[is.na(rel_dat$non_cwt_2nd_mark_count),"non_cwt_2nd_mark_count"] <-0
+rel_dat$non_cwt_2nd_mark_count <-as.numeric(rel_dat$non_cwt_2nd_mark_count)
+
+rel_dat$event_released <-rel_dat$cwt_1st_mark_count +
+                         rel_dat$cwt_2nd_mark_count #+
+                         # rel_dat$non_cwt_1st_mark_count +
+                         # rel_dat$non_cwt_2nd_mark_count
+
+rel_dat$release_stage <-as.factor(rel_dat$release_stage)
+
+
+rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
+                      mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
+                      mutate(jday = yday(first_release_date)) %>%
+                      aggregate(event_released~species+brood_year+release_location_code+hatchery_location_code+tag_code_or_release_id+
+                                               first_release_date_year+first_release_date_month+first_release_date_day+
+                                               first_release_date+jday+avg_weight+release_stage, 
+                                data=., FUN=sum) %>%
+                      rename(tag_code = tag_code_or_release_id)
+
+if(params$yr_trim=="TRUE"){rel_agg <-filter(rel_agg, brood_year %in% params$yr_window)}
+
+##############################
+# [RETURNS] Pull in WDFW FishBooks return data
+# use the tag codes from the release query to grab recoveries; pull capped at 500k records
+rel_agg_cwt <-unique(rel_agg$tag_code)
+rec_cwt <-list()
+
+# Sys.time()
+# test_rec <-get_recovery(token = token, tag_code = rel_agg_cwt[[15]], species = params$sp)
+# Sys.time()
+
+for(t in 1:length(rel_agg_cwt)){
+  rec_cwt[[t]] <-get_recovery(token = token, tag_code = rel_agg_cwt[[t]], species = params$sp)
+}
+
+names(rec_cwt) <-rel_agg_cwt
+rec_cwt_df <-map_df(rec_cwt, ~as.data.frame(.))
+
+rec_agg <-rec_cwt_df %>%  mutate(recovery_date = make_date(recovery_date_year, recovery_date_month, recovery_date_day)) %>%
+                          mutate(jday = yday(recovery_date)) %>%
+                          aggregate(number_cwt_estimated~species+run_year+recovery_date+jday+recovery_location_code+fishery+tag_code,
+                                     data=., FUN=sum) %>%
+                          filter(., recovery_location_code == params$hatchery)
+
+rec_join <-aggregate(number_cwt_estimated~species+tag_code, data=rec_agg, FUN=sum)
+
+
+########################## Join Release & Return Data for SAR ##########################
+sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated")], by = "tag_code") %>%
+         mutate(avg_weight = round(avg_weight, digits = -1)) %>%
+         aggregate(cbind(event_released,number_cwt_estimated)~species+brood_year+release_location_code+hatchery_location_code+
+                                                              first_release_date_month+jday+avg_weight+release_stage,
+                   data=., FUN=sum)
+
+sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
+# sar_df <-sar_df[!is.na(sar_df$sar),]
+
+
+####################################
+### sar by brood year
+ggplot()+
+    geom_boxplot(data=sar_df,aes(x=brood_year,y=sar, group=brood_year))+
+    scale_x_continuous(breaks=seq(min(sar_df$brood_year),max(sar_df$brood_year),1))+
+    theme(axis.text = element_text(size = 15)) +
+    theme(strip.text = element_text(size = 15)) +
+    theme(axis.title = element_text(size = 15)) 
+
+
+### sar by release stage
+# ggplot()+
+#     geom_boxplot(data=sar_df,aes(x=release_stage,y=sar, group=release_stage))+
+#     theme(axis.text = element_text(size = 15)) +
+#     theme(strip.text = element_text(size = 15)) +
+#     theme(axis.title = element_text(size = 15)) 
+
+
+### sar by release size (avg_weight)
+ggplot(data=sar_df,aes(x=avg_weight,y=sar))+
+    geom_boxplot(data=sar_df,aes(x=avg_weight,y=sar, group=avg_weight))+
+    theme(axis.text = element_text(size = 15)) +
+    theme(strip.text = element_text(size = 15)) +
+    theme(axis.title = element_text(size = 15)) +
+    labs(x="Mean Weight")
+
+
+### sar by release timing (jday)
+ggplot(data=sar_df,aes(x=jday,y=sar))+
+    geom_bar(stat="identity")+
+    theme(axis.text = element_text(size = 15)) +
+    theme(strip.text = element_text(size = 15)) +
+    theme(axis.title = element_text(size = 15)) 
+
+ggplot(data=sar_df,aes(x=as.factor(first_release_date_month),y=sar))+
+    geom_boxplot(data=sar_df,aes(x=as.factor(first_release_date_month),y=sar, group=as.factor(first_release_date_month)))+
+    theme(axis.text = element_text(size = 15)) +
+    theme(strip.text = element_text(size = 15)) +
+    theme(axis.title = element_text(size = 15)) +
+    labs(x="Release Month")
+
+
+
+### sar by release location
+# ggplot(data=sar_df,aes(x=release_location_code,y=sar))+
+#     geom_boxplot(data=sar_df,aes(x=release_location_code,y=sar, group=release_location_code))+
+#     theme(axis.text = element_text(size = 15)) +
+#     theme(strip.text = element_text(size = 15)) +
+#     theme(axis.title = element_text(size = 15)) 
+
+
+
+```
+
+## Fit SAR Models
+
+There are a variety of methods that can be employed for summarizing and forecasting SAR. A simple form of this would entail fitting a generalized additive model to the time series of SAR data. Here, we use a different form of this and fit quasi-binomial generalized additive models to the time series of two components of the smolt-adult-return data: total tags released & total tags lost. Return-per-release (or SAR) is explored with the following covariates in mind:
+
+1.  Total return-per-release by brood year
+2.  Release stage
+3.  Release timing
+4.  Release size
+5.  Release location
+
+```{r fit}
+################################################################################
+# [FIT_DAT] Prepare datasets for model fitting
+### Join Release & Return Data for SAR 
+sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated")], by = "tag_code") %>%
+         mutate(avg_weight = round(avg_weight, digits = -1)) %>%
+         aggregate(cbind(event_released,number_cwt_estimated)~species+brood_year+release_location_code+hatchery_location_code+
+                                                              first_release_date_month+jday+avg_weight+release_stage,
+                   data=., FUN=sum)
+
+sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
+
+sar_df <-filter(sar_df,release_stage!="no_stage")
+sar_df$tags_lost <-sar_df$event_released - sar_df$number_cwt_estimated
+write.csv(sar_df, paste0(proj_drive,"sar_df.csv"))
+
+k_by <-length(unique(sar_df$brood_year))
+k_jday <-length(unique(sar_df$jday))
+k_wt <-length(unique(sar_df$avg_weight))
+
+
+
+
+# (Default) m = 2 penalizes the second derivative (squared curvature), leading to a "visually smooth" fit
+# m = 1 penalizes the first derivative (slope), which can result in a more "piecewise" appearance
+mod <-gam(cbind(round(number_cwt_estimated), round(tags_lost)) ~ 
+              + s(brood_year, bs="ps", m=1, k=k_by)
+              + s(jday, bs="cc", m=2, k=k_jday)
+              + s(avg_weight, bs="ts", m=2, k=k_wt)
+              + te(jday, brood_year, bs = c("cc", "ps")), 
+              family=quasibinomial(link="logit"), data=sar_df, method="REML",
+              na.action = "na.fail",
+              select=T)
+
+print(summary(mod))
+# print(mod)
+# print(gam.check(mod))
+
+
+
+##### Generate model sets 
+# factor.vars = c()
+cont.vars = c("brood_year", "jday") #"first_release_date_month"
+# factor.vars = c("avg_weight")
+cyc.vars = c("jday")
+max.knots <-5
+max.preds <-2
+max.fits  <-2000
+
+
+start.fit = gam(cbind(number_cwt_estimated, tags_lost) ~ 1,
+                family=quasibinomial(link = "logit"),
+                data=sar_df) 
+# , method="REML"
+
+
+model.set = generate.model.set(use.dat                    = sar_df,
+                               test.fit                   = start.fit,
+                               pred.vars.cont             = cont.vars,
+                               # pred.vars.fact             = factor.vars,
+                               
+                               # factor.factor.interactions = T,
+                               smooth.smooth.interactions = T,
+                               # factor.smooth.interactions = T,
+                               # bs.arg                     = "tp",
+                               # null.terms = "s(first_release_date_month, bs = 're')",
+                               cyclic.vars                = cyc.vars,
+                               max.predictors             = max.preds,
+                               k                          = max.knots)
+
+out.list = fit.model.set(model.set, parallel=T, max.models = max.fits)
+
+# look at the model selection table
+n_mod <-length(out.list$success.models)
+gcv_ubre_out <-matrix(NA, nrow=n_mod, ncol=2)
+
+for(m in 1:n_mod){
+  gcv_ubre_out[m,1] <-format(out.list$success.models[[m]][["formula"]][[3]])
+  gcv_ubre_out[m,2] <-as.numeric(out.list$success.models[[m]][["gcv.ubre"]])
+}
+colnames(gcv_ubre_out) <-c("mod_name", "gcv_ubre")
+gcv_ubre_df <-as.data.frame(gcv_ubre_out)
+gcv_ubre_df = gcv_ubre_df[order(gcv_ubre_df$gcv_ubre),]
+gcv_ubre_df[1,"mod_name"]
+
+
+mod.table = out.list$mod.data.out
+mod.table = mod.table[order(mod.table$AICc),]
+best.model.aic = out.list$success.models[[as.character(mod.table$modname[1])]]
+second.model.aic = out.list$success.models[[as.character(mod.table$modname[2])]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### Univariate
+### brood_year: 42.9%
+model_by <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp", k = max.knots), 
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+### avg_weight: 14.6%
+model_wt <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(avg_weight, bs = "tp", k = max.knots), 
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+### jday: 12%
+model_jd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(jday, bs = "cc", k = max.knots), 
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+### first_release_date_month: 9.21%
+# model_rd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(first_release_date_month, bs = "re", k = max.knots),
+#                family=quasibinomial(link="logit"),data=sar_df,method="REML")
+
+##### Bivariate
+### brood_year + avg_weight: 52.3%
+model_bywt <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp", k = max.knots) + s(avg_weight, bs = "tp", k = max.knots),
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+### brood_year + jday: 46%
+model_byjd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp", k = max.knots) + s(jday, bs = "cc", k = max.knots),
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+### avg_weight + jday: 16.5%
+model_wtjd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(avg_weight, bs = "cr", k = 3) + s(jday, bs = "cc", k = 9),
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# ### brood_year + first_release_date_month: 77.1%
+# model_byrd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=max.knots) + s(first_release_date_month, bs = "re", k = max.knots),
+#                family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# ### avg_weight + first_release_date_month: 13.5%
+# model_wtrd <-gam(cbind(number_cwt_estimated, event_released - number_cwt_estimated) ~ s(avg_weight,bs="tp",k=3)+s(first_release_date_month,bs="re"),
+#                family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# ### jday + first_release_date_month: 30.6%
+# model_jdrd <-gam(cbind(number_cwt_estimated, event_released - number_cwt_estimated) ~ s(jday,bs="tp")+s(first_release_date_month,bs="re"),
+#                family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+
+##### Multivariate
+### brood_year + avg_weight + jday: 52.2%
+model_bywtjd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k = 3) + s(jday, bs = "cc",k=k_by),
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtjd)
+### brood_year + avg_weight + first_release_date_month: 52.6%
+model_bywtrd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k = 3) + s(first_release_date_month,bs="re"),
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtrd)
+### brood_year + jday + first_release_date_month: 58%
+model_byjdrd <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(jday, bs = "cc",k=k_by) + s(first_release_date_month,bs="re"),
+               family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_byjdrd)
+### jday + avg_weight + first_release_date_month: 37.4%
+# model_jdwtrd <-gam(cbind(number_cwt_estimated, event_released - number_cwt_estimated) ~ s(jday, bs = "tp") + s(avg_weight, bs = "tp", k = 3) + s(first_release_date_month,bs="re"),
+#                family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_jdwtrd)
+
+##### Multivariate w/ interaction
+### brood_year + avg_weight + jday + jdayXbrood_year: 94.4%
+model_bywtjd_int1 <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k = 3) + s(jday, bs = "cc",k=k_by) +
+                       te(jday, brood_year, bs="fs"),
+                    family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+summary(model_bywtjd_int1)
+### brood_year + avg_weight + jday + avg_weightXbrood_year: 59.4%
+model_bywtjd_int2 <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k = 3) + s(jday, bs = "cc",k=k_by) +
+                       te(avg_weight, brood_year, bs="fs", k=3),
+                    family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtjd_int2)
+### brood_year + avg_weight + jday + first_release_date_monthXbrood_year: 94.7%
+model_bywtjd_int3 <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k = 3) + s(jday, bs = "cc",k=k_by) +
+                       te(first_release_date_month, brood_year, bs="re"),
+                    family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtjd_int3)
+###
+### brood_year + avg_weight + first_release_date_month + jdayXbrood_year: 94.8%
+model_bywtrd_int1 <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k=3)+s(first_release_date_month,bs="re") +
+                       te(jday, brood_year, bs="fs"),
+                    family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtrd_int1)
+### brood_year + avg_weight + first_release_date_month + avg_weightXbrood_year: 55.3%
+model_bywtrd_int2 <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k=3)+s(first_release_date_month,bs="re") +
+                       te(avg_weight, brood_year, bs="fs",k=3),
+                    family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtrd_int2)
+### brood_year + avg_weight + first_release_date_month + first_release_date_monthXbrood_year: 52.6%
+model_bywtrd_int3 <-gam(cbind(number_cwt_estimated, tags_lost) ~ s(brood_year, bs = "tp",k=k_by) + s(avg_weight, bs = "tp", k=3)+s(first_release_date_month,bs="re") +
+                       te(first_release_date_month, brood_year, bs="re"),
+                    family = quasibinomial(link = "logit"), data = sar_df, method="REML")
+# summary(model_bywtrd_int3)
+# model_bywtjd_int1
+### gcv_ubre used instead of AIC
+gcv_ubre <-data.frame(gcv_ubre = as.numeric(c(model_by$gcv.ubre,
+           model_bywt$gcv.ubre, model_byjd$gcv.ubre, model_byrd$gcv.ubre,
+           model_bywtjd$gcv.ubre, model_bywtrd$gcv.ubre, model_byjdrd$gcv.ubre,
+           model_bywtjd_int1$gcv.ubre, model_bywtjd_int2$gcv.ubre, model_bywtjd_int3$gcv.ubre,
+           model_bywtrd_int1$gcv.ubre, model_bywtrd_int2$gcv.ubre, model_bywtrd_int3$gcv.ubre)),
+           trt = c("model_by",
+           "model_bywt", "model_byjd", "model_byrd",
+           "model_bywtjd", "model_bywtrd", "model_byjdrd",
+           "model_bywtjd_int1", "model_bywtjd_int2", "model_bywtjd_int3",
+           "model_bywtrd_int1", "model_bywtrd_int2", "model_bywtrd_int3"))
+gcv_ubre = gcv_ubre[order(gcv_ubre$gcv_ubre),]
+gcv_ubre[1,"trt"]
+best.model <-model_bywtjd_int1
+
+# model_bywtrd_int1 wins
+summary(best.model)
+
+
+# Make predictions without including "tag_code"
+preds <-predict(best.model, newdata = sar_df, type = "response", se.fit = T) |>
+        as_tibble() |>
+        rename(prediction = fit, pred_se = se.fit) |>
+        mutate(lci = qnorm(0.025, prediction, pred_se),
+               uci = qnorm(0.975, prediction, pred_se),
+               across(lci, ~ case_when(. < 0 ~ 0, .default = .)))
+
+# add predictions
+sar_pred <-sar_df |> bind_cols(preds)
+```
+
+## Plot Predicted SAR
+
+Generate figures showing the results of the SAR calculations and the selected model fit, including marginal effects.
+
+```{r plot}
+#create some plots
+ggplot(sar_pred, aes(x=brood_year,y=sar,group=first_release_date_month,color=as.factor(first_release_date_month))) +
+  geom_line(aes(x = brood_year, y = prediction,group=first_release_date_month), size=1) +  # Line plot to show trends over brood years
+  geom_ribbon(aes(ymin = lci,ymax = uci,group=first_release_date_month,color = as.factor(first_release_date_month)),alpha = 0.1) +
+  geom_point(aes(group=first_release_date_month)) + # Add points for individual predictions
+  facet_wrap(.~avg_weight, ncol=1)+
+  # theme_minimal() +
+  labs(x = "Brood Year", y = "Predicted SAR", color="Release Month") +
+  scale_x_continuous(breaks=seq(min(sar_pred$brood_year),max(sar_pred$brood_year),1))+
+  # scale_y_log10(breaks = scales::breaks_pretty()) +
+  # scale_y_continuous(trans = "log",
+  #                    breaks = scales::breaks_pretty()) +
+  theme(legend.position = "right")+
+  theme(axis.text = element_text(size = 15)) +
+  theme(strip.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 15)) 
+
+
+sar_pred |> 
+  ggplot(aes(x = sar, y = prediction)) + 
+  geom_abline(linetype = 2) +
+  geom_point(size = 3) +
+  # scale_x_log10(breaks = scales::breaks_pretty()) +
+  # scale_y_log10(breaks = scales::breaks_pretty()) +
+  labs(x = "Observed SAR", y = "Predicted SAR")
+
+
+plot(ggpredict(best.model, terms = c("jday", "avg_weight")), facet = TRUE)
+plot(ggpredict(best.model, terms = c("brood_year", "avg_weight")), facet = TRUE)
+
+
+
+```
