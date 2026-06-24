@@ -14,19 +14,20 @@ editor: visual
 echo: true
 params:
   smolt: true
-  sp: "1" # Chinook=1; Coho=2; Steelhead=3; "Chum" "Pink"
+  sp: "1" # Chinook=1; Coho=2; Steelhead=3; 
   run: "1" # spring == 1; summer == 2; fall == 3; winter == 4
-  system: "r5_lewis"
+  system: "r5_cowlitz"
+  # rel_loc: ""
+  # ret_loc: ""
   yr_trim: true
-  yr_window: !expr c(seq(2013,2021,1)) 
-
+  yr_window: !expr c(seq(2000,2021,1)) 
 ---
 
 ## Setup
 
-This script uses WDFW hatchery coded wire tag (CWT) release data and return data to fit program-specific smolt-adult return (SAR) models for Pacific salmon. However, if the user is instead interested in calculating return-per-release (i.e., not just returns for smolts), there is a "smolt" switch in the YAML header where setting 'false' will allow this. 
+This script uses WDFW hatchery coded wire tag (CWT) release and return data to fit run-specific smolt-adult return (SAR) models for Pacific salmon. However, if the user is instead interested in calculating return-per-release (i.e., releases for all stages), there is a "smolt" switch in the YAML header where setting 'false' will allow this.
 
-Release and return data are categorized by treatments imposed related to release size, release stage, release location, and are uniquely identified by coded-wire-tag codes. SAR time series are then fit to generalized additive models to summarize trends, identify any potentially significant treatments. The first chunk below loads libraries, sets directories, and sources any functions required for the analysis. Future work will add:
+Release and return data are categorized by treatments imposed related to release size, release stage, release location, and are uniquely identified by coded-wire-tag codes. SAR time series are then fit to generalized additive models to summarize trends and identify any potentially significant treatments. The first chunk below loads libraries, sets directories, and sources any functions required for the analysis. Future work will add:
 
 -   SAS rule making
 -   rTMB function to fill in missing return data
@@ -64,15 +65,16 @@ source(paste0(proj_drive,"functions/functions.R",sep="")) #Source functions for 
 
 This chunk pulls CWT-based release, and recovery data from the Pacific States Marine Fisheries Commission's (PSMFC) Regional Marking Information System (RMIS) database for the species and hatchery stock set by the user at the top of this script. Smolt-adult return (SAR) is calculated as the proportion of released fish that return to the hatchery location code designated. The fish released in any brood year will not all return to the rack, and those fish that do return to the rack will not all return the same year. Once the window for a brood year's return has finished (6 years post-release), the SAR can be calculated.
 
-To ensure all data employed in SAR calculations are smolt-release data, the script categorizes releases by stage using a mixture of information reported in the literature and RMIS data queried by the user. Quinn (2018) reports length-at-smolt (mm) by species in Table 15.1, which summarizes data from 218 published and unpublished reports. For Chinook, size-at-smolt is reported as a range of sizes starting at 60 mm. We use these reported values to inform a release stage designation, where the avg_length and avg_weight fields queried from RMIS by the user are fit to an exponential model and the model fit is used to predict weight-at-smolt. This weight-at-smolt is then used to classify release stages, currently implemented as "smolt" if they are larger than the threshold size calculated or "fry_parr" if smaller than it. Given the query-specific nature of this analysis, if program- or system-specific data on size-at-smolt were collected in the future, these data could be used directly to inform release_stage classifications. 
+To ensure all data employed in SAR calculations are smolt-release data, the script categorizes releases by stage using a mixture of information reported in the literature and RMIS data queried by the user. Quinn (2018) reports length-at-smolt (mm) by species in Table 15.1, which summarizes data from 218 published and unpublished reports. For Chinook, size-at-smolt is reported as a range of sizes starting at 60 mm. We use these reported values to inform a release stage designation, where the avg_length and avg_weight fields queried from RMIS by the user are fit to an exponential model and the model fit is used to predict weight-at-smolt. This weight-at-smolt is then used to classify release stages, currently implemented as "smolt" if they are larger than the threshold size calculated or "fry_parr" if smaller than it. Given the query-specific nature of this analysis, if program- or system-specific data on size-at-smolt were collected in the future, these data could be used directly to inform release_stage classifications.
 
 Notes:
 
 -   Data filtering
     -   Release data used excludes untagged release groups (i.e., tag_code_or_release_id begins with "!")
-    -   Recovery data only include CWT-tagged fish
+    -   Recovery data only include CWT-tagged fish and use RMIS' number_cwt_estimated (i.e., an estimated number of tag recoveries)
 -   Release calculation: cwt_1st_mark_count + cwt_2nd_mark_count
 -   Returns calculation: aggregate returns across tag_code or rearing treatment of interest
+    -   Returns are filtered for adults (age-3+)
 -   User can specify to calculate SAR or RPR via a 'smolt' switch in the YAML header
     -   Figures and tables will still report this as SAR currently
     -   Work is ongoing to treat figure generation conditionally to correctly display SAR or RPR
@@ -85,7 +87,7 @@ Notes:
 #| layout-ncol: 1
 #| label: fig-data1
 #| fig-cap: 
-#|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). Facets are split by run, where 1 = spring and 3 = fall."
+#|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). Facets are split by run."
 
 ruleset <-read.csv(paste0(proj_drive,"data/hatchery_program_ruleset.csv",sep=""))
 
@@ -219,14 +221,15 @@ ggplotly(len_wt)
 
 
 ```
+
 ```{r, message=FALSE, warning=FALSE}
 #| layout-ncol: 2
 #| label: fig-data2
 #| fig-cap: 
-#|   - "Smolt-adult return calculated across brood year released and mean weight-at-release groups. Facets are split by run, where 1 = spring and 3 = fall."
-#|   - "Smolt-adult return calculated across brood year released and mean month-at-release groups. Facets are split by run, where 1 = spring and 3 = fall."
-#|   - "Smolt-adult return calculated across brood year released and release site groups. Facets are split by run, where 1 = spring and 3 = fall."
-#|   - "Smolt-adult return calculated across julien day released. Facets are split by run, where 1 = spring and 3 = fall."
+#|   - "Smolt-adult return calculated across brood year released and mean weight-at-release groups. Facets are split by run."
+#|   - "Smolt-adult return calculated across brood year released and mean month-at-release groups. Facets are split by run."
+#|   - "Smolt-adult return calculated across brood year released and release site groups. Facets are split by run."
+#|   - "Smolt-adult return calculated across julien day released. Facets are split by run."
 
 # ggplot(len_wt_df, aes(x=avg_length, y=avg_weight, group=as.factor(first_release_date_month), color=as.factor(first_release_date_month))) +
 #   geom_point(aes(group=first_release_date_month)) + 
@@ -298,7 +301,6 @@ ggplot(data=sar_df,aes(x=as.factor(jday),y=sar*100))+
 
 
 ```
-
 
 ```{r, message=FALSE, warning=FALSE}
 #| label: tbl-data
@@ -383,7 +385,7 @@ Generate figures showing the results of the SAR calculations and the selected mo
 #| fig-cap: 
 #|   - "Predicted smolt-adult return generated from the model fit across brood years, mean weight release groups, and release month."
 #|   - "Predicted smolt-adult return generated from the model fit across brood years, mean weight release groups, and release month."
-#|   - "Observed vs. predicted smolt-adult return generated from the model fit."
+#|   - "Raw-calculated vs. Model-predicted smolt-adult return generated from the model fit."
 #|   - "Marginal effects from the model fit showing how combined changes in mean weight at release and release timing (jday) affect smolt-adult-return."
 
 #create some plots
@@ -430,7 +432,7 @@ sar_pred |>
   geom_point(size = 3) +
   # scale_x_log10(breaks = scales::breaks_pretty()) +
   # scale_y_log10(breaks = scales::breaks_pretty()) +
-  labs(x = "Observed SAR (%)", y = "Predicted SAR (%)")
+  labs(x = "Raw-calculated SAR (%)", y = "Model-predicted SAR (%)")
 
 
 margfx <-ggpredict(mod, terms = c("jday", "avg_weight"))
@@ -444,4 +446,4 @@ plot(margfx, facet = TRUE) +
 
 ## References
 
-Quinn, T.P. 2018. The behavior and ecology of Pacific salmon and trout. Second Edition. University of Washington Press. ISBN 9780295743332.
+Quinn, T.P. 2018. The behavior and ecology of Pacific salmon and trout. Second Edition. University of Washington Press. ISBN: 9780295743332.
