@@ -3,12 +3,18 @@ title: "Pacific Salmon SAR & SAS Estimator"
 author: "Kris Warner & Matt Siskey"
 format: 
   html:
+    grid:
+      sidebar-width: 200px
+      body-width: 1500px
+      margin-width: 400px
+      gutter-width: 1.5rem
     toc: true
     theme: sketchty
     embed-resources: true
     self-contained-math: true
     code-tools: true
     code-fold: true
+    code-overflow: wrap
 lightbox: auto
 editor: visual
 echo: true
@@ -16,26 +22,25 @@ params:
   smolt: true
   sp: "1" # Chinook=1; Coho=2; Steelhead=3; 
   run: "1" # spring == 1; summer == 2; fall == 3; winter == 4
-  system: "r5_cowlitz"
-  # rel_loc: ""
-  # ret_loc: ""
+  system: "r5_lewis"
   yr_trim: true
-  yr_window: !expr c(seq(2000,2021,1)) 
+  yr_window: !expr c(seq(2013,2020,1)) 
 ---
 
-## Setup
+# Setup
 
-This script uses WDFW hatchery coded wire tag (CWT) release and return data to fit run-specific smolt-adult return (SAR) models for Pacific salmon. However, if the user is instead interested in calculating return-per-release (i.e., releases for all stages), there is a "smolt" switch in the YAML header where setting 'false' will allow this.
+This script uses WDFW hatchery coded wire tag (CWT) release and return data to fit run-specific smolt-adult return (SAR) and smolt-adult-survival (SAS) models for Pacific salmon species. The first chunk below loads libraries, sets directories, and sources any functions required for the analysis. A table is generated that displays species- and system-specific location_code information for the parameters set in the YAML header, including hatchery_location_codes, release_location_codes, and stock_location_codes for data to be used in SAR/SAS calculation. This table is based on a metadata ruleset constructed by the developers, and new queries will require additions to this ruleset for smooth data processing and model fitting.
 
-Release and return data are categorized by treatments imposed related to release size, release stage, release location, and are uniquely identified by coded-wire-tag codes. SAR time series are then fit to generalized additive models to summarize trends and identify any potentially significant treatments. The first chunk below loads libraries, sets directories, and sources any functions required for the analysis. Future work will add:
 
--   SAS rule making
--   rTMB function to fill in missing return data
--   Forecasting SAR
--   Age-specific analyses
--   Additional treatment structure for releases (e.g., volitional vs. forced, bisease-based, etc.)
+```{r}
+#| label: tbl-data
+#| tbl-colwidths: false
+#| tbl-cap: "Query values and the location-based ruleset for the user-defined system."
+#| tbl-subcap: 
+#|   - "Parameter values set in the YAML header defining which data are being pulled from RMIS for calculation of SAR and SAS."
+#|   - "Species- and system-specific location_code information for the parameters set in the YAML header, including hatchery_location_codes, release_location_codes, and stock_location_codes. This information is used to query RMIS' via API connection, pull relevant data, and run SAR & SAS analyses."
+#| layout-ncol: 2
 
-```{r setup}
 ##############################
 ### Clear workspace & load libraries
 # rm(list=ls())
@@ -46,7 +51,7 @@ Release and return data are categorized by treatments imposed related to release
 
 # Load packages, several aren't used in this workflow
 pacman::p_load(rmisr, httr, magrittr, dplyr, purrr, stringr, tidyverse, knitr, kableExtra, ggplot2, plotly,
-               RColorBrewer, jsonlite, janitor, keyring, mgcv, here, lubridate, tidygam, ggeffects)
+               RColorBrewer, jsonlite, janitor, keyring, mgcv, here, lubridate, tidygam, ggeffects, readr, ggblur)
 
 # Supply API key through keyring to access RMIS server & maintain credential security
 token <- key_get("rmis_api")
@@ -59,47 +64,55 @@ proj_drive  <-paste0(share_drive,"psalmon_sar_sas/")
 `%nin%`     <-negate(`%in%`) # create an exclude operator
 source(paste0(proj_drive,"functions/functions.R",sep="")) #Source functions for use below
 
+fishery_id <-read.csv(paste0(proj_drive,"data/fishery.csv",sep=""))
+fishery_id$fishery <-as.character(fishery_id$fishery)
+ruleset <-read.csv(paste0(proj_drive,"data/hatchery_program_ruleset.csv",sep=""), fileEncoding = "latin1", check.names=F)
+
+param_tab <-data.frame(params=c("system","species","run","start_yr","end_yr"),
+                       value=c(params$system,params$sp,params$run,params$yr_window[1],params$yr_window[length(params$yr_window)]))
+
+
+
+
+
+param_tab %>%
+  kbl(format="html", row.names = NA)%>%
+  kable_classic(position="left", html_font = "Cambria")%>%
+  kable_styling(full_width = F, bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
+  
+ruleset %>%
+  filter(., system==params$system) %>%
+  # rename("month" = first_release_date_month) %>%
+  # arrange(brood_year, month,avg_weight) %>%
+  # select(-brood_year)%>%
+  kbl(format="html", row.names = NA)%>%
+  kable_classic(position="left", html_font = "Cambria")%>%
+  kable_styling(full_width = F, bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
+
 ```
+
 
 ## Pull data & format
 
-This chunk pulls CWT-based release, and recovery data from the Pacific States Marine Fisheries Commission's (PSMFC) Regional Marking Information System (RMIS) database for the species and hatchery stock set by the user at the top of this script. Smolt-adult return (SAR) is calculated as the proportion of released fish that return to the hatchery location code designated. The fish released in any brood year will not all return to the rack, and those fish that do return to the rack will not all return the same year. Once the window for a brood year's return has finished (6 years post-release), the SAR can be calculated.
+This chunk pulls CWT-based release and recovery data from the Pacific States Marine Fisheries Commission's (PSMFC) Regional Marking Information System (RMIS) database for the species and hatchery stock set by the user at the top of this script. Release and return data are categorized by release size, release stage, release location, and are uniquely identified by coded-wire-tag codes. The release data are pulled first and length-weight data associated with those releases are used to determine stage-at-release. 
 
-To ensure all data employed in SAR calculations are smolt-release data, the script categorizes releases by stage using a mixture of information reported in the literature and RMIS data queried by the user. Quinn (2018) reports length-at-smolt (mm) by species in Table 15.1, which summarizes data from 218 published and unpublished reports. For Chinook, size-at-smolt is reported as a range of sizes starting at 60 mm. We use these reported values to inform a release stage designation, where the avg_length and avg_weight fields queried from RMIS by the user are fit to an exponential model and the model fit is used to predict weight-at-smolt. This weight-at-smolt is then used to classify release stages, currently implemented as "smolt" if they are larger than the threshold size calculated or "fry_parr" if smaller than it. Given the query-specific nature of this analysis, if program- or system-specific data on size-at-smolt were collected in the future, these data could be used directly to inform release_stage classifications.
+To ensure all data employed in SAR/SAS calculations are smolt-release data, the script categorizes releases by stage using a mixture of information reported in the literature and RMIS data queried by the user. Quinn (2018) reports length-at-smolt (mm) by species in Table 15.1, which summarizes data from 218 published and unpublished reports. We use these reported values to inform a release stage designation, where the avg_length and avg_weight fields queried from RMIS by the user are fit to an exponential model and the model fit is used to predict weight-at-smolt. This weight-at-smolt is then used to classify release stages, currently implemented as "smolt" if they are larger than the threshold size calculated or "fry_parr" if smaller than it. Given the query-specific nature of this analysis, if program- or system-specific data on size-at-smolt were available, these data could be used directly to inform release_stage classifications.
 
-Notes:
-
--   Data filtering
-    -   Release data used excludes untagged release groups (i.e., tag_code_or_release_id begins with "!")
-    -   Recovery data only include CWT-tagged fish and use RMIS' number_cwt_estimated (i.e., an estimated number of tag recoveries)
--   Release calculation: cwt_1st_mark_count + cwt_2nd_mark_count
--   Returns calculation: aggregate returns across tag_code or rearing treatment of interest
-    -   Returns are filtered for adults (age-3+)
--   User can specify to calculate SAR or RPR via a 'smolt' switch in the YAML header
-    -   Figures and tables will still report this as SAR currently
-    -   Work is ongoing to treat figure generation conditionally to correctly display SAR or RPR
--   Avg_weight to fpp conversion:
-    -   avg_weight of 1 --\> 454 fpp
-    -   avg_weight of 40 --\> 12 fpp
-    -   avg_weight of 60 --\> 8 fpp
 
 ```{r, message=FALSE, warning=FALSE}
 #| layout-ncol: 1
-#| label: fig-data1
+#| label: fig-data
 #| fig-cap: 
-#|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). Facets are split by run."
-
-ruleset <-read.csv(paste0(proj_drive,"data/hatchery_program_ruleset.csv",sep=""))
+#|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). The red-dashed vertical line shows the species-specific size used for the weight-at-smolt conversion. Facets are split by run."
 
 ### [LOCATION]
-# loc_all <-get_location(token = token)
+loc_all <-get_location(token = token)
 # rect <-loc_all |>
 #   filter(location_type == 2) #|>
 #   rename(recovery_location_name = name,
 #      recovery_description = description,
 #      recovery_location_code = location_code) |>
 #   select(-c(id, format_version, record_code))
-
 
 ### [RELEASES] Pull in RMIS release data
 ### hatchery of interest location codes, found on the hatt data frame
@@ -153,16 +166,17 @@ rel_dat$event_released <-rel_dat$cwt_1st_mark_count +
 rel_dat$release_stage_assigned <-as.factor(rel_dat$release_stage_assigned)
 
 rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
+                      filter(run==params$run) %>%
+                      mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
                       mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
                       mutate(jday = yday(first_release_date)) %>%
-                      aggregate(event_released~species+brood_year+run+release_location_code+hatchery_location_code+stock_location_code+
-                                               tag_code_or_release_id+first_release_date_year+first_release_date_month+first_release_date_day+
-                                               first_release_date+jday+avg_weight+avg_length+release_stage_assigned, 
+                      aggregate(event_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
+                                                 first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
                                 data=., FUN=sum) %>%
                       rename(tag_code = tag_code_or_release_id)
 
 if(params$yr_trim=="TRUE"){rel_agg <-filter(rel_agg, brood_year %in% params$yr_window)}
-
+if(params$smolt==TRUE){rel_agg <-filter(rel_agg,release_stage_assigned=="smolt")}
 
 ##############################
 # [RETURNS] Pull in WDFW FishBooks return data
@@ -170,41 +184,39 @@ if(params$yr_trim=="TRUE"){rel_agg <-filter(rel_agg, brood_year %in% params$yr_w
 rel_agg_cwt <-unique(rel_agg$tag_code)
 rec_cwt <-list()
 
-# Sys.time()
-# test_rec <-get_recovery(token = token, tag_code = rel_agg_cwt[[15]], species = params$sp)
-# Sys.time()
-
 for(t in 1:length(rel_agg_cwt)){
   rec_cwt[[t]] <-get_recovery(token = token, tag_code = rel_agg_cwt[[t]], species = params$sp)
 }
-
 names(rec_cwt) <-rel_agg_cwt
-rec_cwt_df <-map_df(rec_cwt, ~as.data.frame(.))
 
+rec_cwt_df <-rec_cwt %>% map_df(., ~as.data.frame(.)) %>%  
+                         mutate(recovery_date = make_date(recovery_date_year, recovery_date_month, recovery_date_day)) %>%
+                         mutate(jday_rec = yday(recovery_date)) %>%
+                         left_join(., rel_agg[,c("brood_year","tag_code")], by = "tag_code")
 
-### this is the step where we distinguish btw sar & sas (recovery_location_code)
-rec_agg <-rec_cwt_df %>%  mutate(recovery_date = make_date(recovery_date_year, recovery_date_month, recovery_date_day)) %>%
-                          mutate(jday = yday(recovery_date)) %>%
-                          aggregate(number_cwt_estimated~species+recovery_date_year+recovery_date+jday+recovery_location_code+fishery+tag_code,
-                                     data=., FUN=sum) %>% 
-                          filter(., recovery_location_code %in% hatcheries)
+rec_cwt_df$age <-rec_cwt_df$recovery_date_year-rec_cwt_df$brood_year
 
-rec_join <-aggregate(number_cwt_estimated~species+recovery_date_year+tag_code, data=rec_agg, FUN=sum)
-rec_join_age <-left_join(rec_join,rel_agg[,c("brood_year","tag_code")], by = "tag_code")
-rec_join_age$age <-rec_join_age$recovery_date_year-rec_join_age$brood_year
-rec_join <-filter(rec_join_age, age >= 3)
+rec_join <-rec_cwt_df %>% filter(., age >= 3) %>%
+                          aggregate(number_cwt_estimated ~ species + recovery_location_code + fishery + tag_code, data=., FUN=sum)
+
+# r5_cowlitz strays to:
+## 3F42001^^270168^R03 == MERWIN DAM FCF (+10 number_cwt_estimated)
+## 3F42001^^270002^H == KALAMA FALLS HATCHERY (+14 number_cwt_estimated)
+## 3F42001^^260002^R12 == ABOVE FALLS DAM (cowlitz) (+0 number_cwt_estimated)
 
 ########################## Join Release & Return Data for SAR ##########################
-sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated","recovery_date_year")], by = "tag_code") %>%
-         mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
-         aggregate(cbind(event_released,number_cwt_estimated)~species+brood_year+run+release_location_code+hatchery_location_code+
-                                                              first_release_date_month+jday+avg_weight+release_stage_assigned,
+# even if release_location_code is the same across recoveries, event_released gets multi-counted if you dont distinguish separate SAR calculations for tag_code
+sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated","recovery_location_code","fishery")], by = "tag_code") %>%
+         aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code +
+                                                                 first_release_date_month + jday + avg_weight + release_stage_assigned + tag_code + 
+                                                                 recovery_location_code + fishery,
                    data=., FUN=sum)
+
 sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
-if(params$smolt==TRUE){sar_df <-filter(sar_df,release_stage_assigned=="smolt")}
 
 
 ####################################
+### Length-weight relationship for determining stage
 # set plotting theme
 theme_set(theme_minimal())
 
@@ -212,159 +224,542 @@ theme_set(theme_minimal())
 len_wt <- ggplot(len_wt_df, aes(x=avg_length, y=avg_weight, group=as.factor(first_release_date_month), color=as.factor(first_release_date_month))) + 
             # geom_line(aes(x = avg_length, y = prediction*100,group=first_release_date_month), linewidth=1) +  
             geom_point(pch=21)+
-            facet_wrap(.~run, ncol=1)+
+            geom_vline(xintercept=smolt_mm, color="red",linetype="dashed",alpha=0.3)+
+            # facet_wrap(.~run, ncol=1)+
             labs(x="Mean Length (mm)", y="Mean Weight (g)", color="Release Month")
 ggplotly(len_wt)
+```
+
+After stage has been assigned, release data are filtered for CWT-tagged groups (i.e., tag_code_or_release_id beginning with "!" are removed). An event_released column is created by combining cwt_1st_mark_count and cwt_2nd_mark_count, and julian day is calculated from first_release_date. Release counts ("event_released") are then aggregated by run, brood year, release location, tag code, julian day, weight-at-release, and stage-at-release. Tag code groups that do not have one of these data types are removed, as well as groups that fall outside the brood year window designated in the YAML header. A table is generated below that reports the release_location_code information for the filtered data.
+
+
+```{r, message=FALSE, warning=FALSE}
+#| echo: false
+#| label: tbl-data0
+#| tbl-cap: 
+#|   - "Release location information for filtered data used in the following smolt-adult return calculations."
+
+### Table showing release and return locations after data filtering
+ruleset %>%
+  filter(., system==params$system) %>%
+  filter(., loc_code %in% unique(sar_df$release_location_code)) %>%  
+  # rename("month" = first_release_date_month) %>%
+  # arrange(brood_year, month,avg_weight) %>%
+  # select(-brood_year)%>%
+  kbl(table.attr = 'data-quarto-disable-processing="true"', format="html", row.names = NA)%>%
+  kable_classic(position="left", html_font = "Cambria")%>%
+  kable_styling(full_width = F, bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
+
+```
+
+The CWT tag codes retained in the release data after filtering are then used to iteratively pull recovery data by tag code. The estimated number of recoveries (number_cwt_estimated) is reported by tag_code, so only grouped data are available. These data are aggregated by tag_code and rearing treatments of interest (e.g., size-at-release, release month, release julian day, etc.). Release year and recovery year are used to calculate age-at-recovery, and this age is used to filter the data for adults (e.g., age-3+ in Region 5). Together, these filtered release and recovery data are used to calculate fate-specific SARs below. 
+
+::: {style="margin-bottom: 100px;"}
+:::
+
+# Smolt-adult-return (SAR)
+
+Smolt-adult-return is calculated for each categorized fate (hatchery, fishery, and spawning ground) of paired release-recovery data. Below, fate is categorized based on fishery coding, and then fate-specific SARs are reported. These fate-specific SARs are then used below to: (1) fit predictive SAR models, and (2) calculate smolt-adult-survival (SAS).
+
+## Fate-specific SARs
+
+Fate is determined by the fishery coding reported for each recovery. Fishery codes range from 10-99, with some additional codes supplied for high seas fishery categories (800-812). We designate troll (10-19), net & seine (20-29), aboriginal (30-39), sport (40-49), treaty subsitence (56), test (60-69), and high seas (80-89, 800, 802-805, 812) fisheries recoveries as 'fishery' fates. In addition, we designate hatchery (50), fish trap (52), broodstock collections (53), and mixed broodstock collection/hatchery returns (57) recoveies as 'hatchery' fates, and we designate spawning ground (54) recoveries as 'spawngr' fates.  
+
+```{r, message=FALSE, warning=FALSE}
+#| layout-ncol: 1
+#| label: fig-data0
+#| fig-cap: 
+#|   - "Smolt-adult return calculated collectively across brood year released and recovery fate."
+
+### this is the step where we distinguish fates (sar) & their contribution to sas (collective sar)
+### sar by fate category (composed from 'fishery' codes in RMIS, but not all fisheries)
+troll        <-seq(10,19,1) 
+net_seine    <-seq(20,29,1) 
+aboriginal   <-seq(30,39,1) 
+sport        <-seq(40,49,1) 
+esc          <-seq(50,59,1) 
+test_fishery <-seq(60,69,1) 
+juv_sampling <-seq(70,79,1) # disregarded
+high_sea     <-c(seq(80,89,1),800,802,803,804,805,812)
+misc         <-seq(90,99,1) # disregarded
+
+fate_fishery <-c(troll, net_seine, aboriginal, sport, 56, test_fishery, high_sea)
+fate_hatchery <-c(50,52,53,57)
+fate_spawngr <-54
+
+sar_df_fates <-left_join(sar_df, fishery_id, by = "fishery") %>%
+               select(-sar) %>%
+               aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code + 
+                                                                       first_release_date_month + jday + avg_weight + release_stage_assigned + 
+                                                                       recovery_location_code + fishery + fishery_name + fishery_short_name + tag_code, 
+                         data=., FUN=sum) %>%
+               mutate(.,fate = case_when(fishery %in% fate_fishery ~ "fishery",
+                                                    fishery %in% fate_hatchery ~ "hatchery",
+                                                    fishery %in% fate_spawngr ~ "spawngr"))
+
+sar_df_fates$sar <-sar_df_fates$number_cwt_estimated/sar_df_fates$event_released
 
 
 
+### top-level fate returns
+# aggregated fate tiles
+sar_df_fates %>% select(-sar) %>%
+                 aggregate(number_cwt_estimated ~ species + brood_year + fate + tag_code + event_released, data=., FUN=sum) %>%
+                 aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + fate, data=., FUN=sum) %>%
+                 complete(., species, brood_year, fate, fill = list(event_released = 0, number_cwt_estimated = 0)) %>%
+                 ggplot(.,aes(x=as.factor(brood_year),y=as.factor(fate), fill=(number_cwt_estimated/event_released)*100))+
+                    geom_tile(linewidth=0.5)+
+                    scale_fill_gradient(low = "white", high = "black")+
+                    # facet_wrap(.~run, ncol=1)+
+                    labs(x = "Brood Year", y = "Fate", fill = "SAR (%)")+
+                    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+# boxplots of fate time series
+# ggplot(sar_df_fates,aes(x=as.factor(brood_year),y=sar*100))+
+#    geom_boxplot()+
+#    geom_point(pch=21,size=2)+
+#    facet_wrap(fate~., ncol=2)+
+#    labs(x = "Brood Year", y = "SAR (%)")+
+#    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+```
+::: {style="margin-bottom: 100px;"}
+:::
+
+
+### Hatchery SAR
+
+Paired release-recovery data are filtered for 'hatchery' fates in this section, and used to calculate hatchery SARs. We first report the recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location. There will likely be strays present, but we want to report a 'return to rack' for the hatchery to inform program performance and broodstock collection. Therefore, we filter these stray fish out here, and will re-incorporate them later in the summation of fate-specific SARs for calculation of SAS. Therefore, all hatchery SAR results will be for the list of location_codes categorized as hatchery_location_code in the metadata ruleset (Table 1). 
+
+```{r, message=FALSE, warning=FALSE}
+#| label: tbl-data1
+#| tbl-cap: 
+#|   - "Recovery locations associated with a 'hatchery' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
+
+### Table showing release and return locations after data filtering
+hatch_recover <-unique(filter(sar_df_fates, fate=="hatchery")$recovery_location_code)
+hatch_recover_name <-list()
+
+for(i in 1:length(hatch_recover)){
+  hatch_recover_name[[i]] <-filter(loc_all, location_code == hatch_recover[i])[1,c("location_code","name","latitude","longitude","psc_region")]
+  }
+
+hatch_recover_sum <-aggregate(number_cwt_estimated~recovery_location_code, data=filter(sar_df_fates, fate=="hatchery"),FUN=sum)
+hatch_recover_df <-hatch_recover_name %>% map_df(., ~as.data.frame(.)) %>%
+                                          rename("recovery_location_code" = location_code) %>%
+                                          left_join(., hatch_recover_sum, by="recovery_location_code") %>%
+                                          arrange(desc(number_cwt_estimated))
+
+hatch_recover_df %>%
+  # filter(., location_code %in% hatch_recover) %>%
+  # rename("month" = first_release_date_month) %>%
+  # arrange(brood_year, month,avg_weight) %>%
+  # select(-brood_year)%>%
+  kbl(table.attr = 'data-quarto-disable-processing="true"', format="html", row.names = NA)%>%
+  kable_classic(position="left", html_font = "Cambria")%>%
+  kable_styling(full_width = F, bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
+```
+
+Hatcheries will often vary their rearing treatments to produce fish of different sizes at release or to release fish at different times of the season. Here, we aggregate the filtered hatchery data by the treatment variables size-at-release, release month, release site, and julian day of release,  
+
+```{r, message=FALSE, warning=FALSE}
+#| layout-ncol: 2
+#| label: fig-dat1
+#| fig-cap: 
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and mean weight release groups."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release month."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release sites."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and julian days."
+
+### hatchery sar
+# sar by brood year & mean wt
+ggplot(data=filter(sar_df_fates, fate == "hatchery" & recovery_location_code %in% hatcheries),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Mean Weight (g)", title = paste0("Return Location: Hatcheries"))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+# sar by brood year & release month
+ggplot(data=filter(sar_df_fates, fate == "hatchery" & recovery_location_code %in% hatcheries),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Month", title = paste0("Return Location: Hatcheries"))+
+    # scale_x_continuous(limits=c(min(sar_df$brood_year),max(sar_df$brood_year)), breaks=seq(min(sar_df$brood_year),max(sar_df$brood_year),1))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
+
+# sar by release location
+ggplot(data=filter(sar_df_fates, fate == "hatchery" & recovery_location_code %in% hatcheries),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Site", title = paste0("Return Location: Hatcheries"))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
+
+# sar by release timing (jday)
+ggplot(data=filter(sar_df_fates, fate == "hatchery" & recovery_location_code %in% hatcheries),aes(x=as.factor(jday),y=sar*100))+
+    # geom_hdr() +
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # geom_density_2d_filled(alpha = 0.8) +
+    labs(x = "Julien Day", y = "SAR (%)", fill = "Release Site", title = paste0("Return Location: Hatcheries"))+
+    # facet_wrap(.~run, ncol=1)+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+ # Angle x-axis labels for readability
+    theme(legend.position = "none")
+```
+
+Below we report the SAR values shown in the figures above so the reader has access to the individual data points. Note that the figures report SAR in percentages, while the table values are raw values.
+
+```{r, message=FALSE, warning=FALSE}
+#| label: tbl-data2
+#| tbl-cap: 
+#|   - "Smolt-adult return calculated across brood years, mean weight-at-release, and time at release."
+
+sar_hatch_tab <-sar_df_fates[,c("species","brood_year","release_location_code","recovery_location_code","first_release_date_month",
+                                "jday","avg_weight","event_released","sar","fate")]%>%
+  filter(., fate == "hatchery" & recovery_location_code %in% hatcheries) %>%
+  rename("month" = first_release_date_month) %>%
+  arrange(brood_year, month, avg_weight) #%>%
+  
+sar_hatch_tab %>%
+  select(-c(brood_year,fate)) %>%
+  kbl(row.names = NA) %>%
+  kable_classic(position="left",full_width = F, html_font = "Cambria") %>%
+  kable_styling(bootstrap_options = c("condensed")) %>%
+  scroll_box(height = "400px") %>%
+  pack_rows(index = table(sar_hatch_tab$brood_year))
 
 
 ```
 
+::: {style="margin-bottom: 100px;"}
+:::
+
+### Spawning Ground SAR
+
+Paired release-recovery data are filtered for 'spawngr' fates in this section, and used to calculate spawning ground SARs. We first report the recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location. There may be strays present, because more work is needed to identify spawning grounds associated with stocks of interest. 
+
+```{r, message=FALSE, warning=FALSE}
+#| echo: false
+#| label: tbl-data3
+#| tbl-cap: 
+#|   - "Recovery locations associated with a 'spawngr' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
+
+### Table showing release and return locations after data filtering
+spawngr_recover <-unique(filter(sar_df_fates, fate=="spawngr")$recovery_location_code)
+spawngr_recover_name <-list()
+
+for(i in 1:length(spawngr_recover)){
+  spawngr_recover_name[[i]] <-filter(loc_all, location_code == spawngr_recover[i])[1,c("location_code","name","latitude","longitude","psc_region")]
+  }
+
+spawngr_recover_sum <-aggregate(number_cwt_estimated~recovery_location_code, data=filter(sar_df_fates, fate=="spawngr"),FUN=sum)
+spawngr_recover_df <-spawngr_recover_name %>% map_df(., ~as.data.frame(.)) %>%
+                                          rename("recovery_location_code" = location_code) %>%
+                                          left_join(., spawngr_recover_sum, by="recovery_location_code") %>%
+                                          arrange(desc(number_cwt_estimated))
+
+spawngr_recover_df %>%
+  # filter(., location_code %in% hatch_recover) %>%
+  # rename("month" = first_release_date_month) %>%
+  # arrange(brood_year, month,avg_weight) %>%
+  # select(-brood_year)%>%
+  kbl(table.attr = 'data-quarto-disable-processing="true"', format="html", row.names = NA)%>%
+  kable_classic(position="left", html_font = "Cambria")%>%
+  kable_styling(full_width = F, bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
+```
+
+Hatchery release treatments affecting sizes at release or timing of release are shown by aggregating the filtered release-return data by the treatment variables size-at-release, release month, release site, and julian day of release,  
+
 ```{r, message=FALSE, warning=FALSE}
 #| layout-ncol: 2
-#| label: fig-data2
+#| label: fig-dat2
 #| fig-cap: 
-#|   - "Smolt-adult return calculated across brood year released and mean weight-at-release groups. Facets are split by run."
-#|   - "Smolt-adult return calculated across brood year released and mean month-at-release groups. Facets are split by run."
-#|   - "Smolt-adult return calculated across brood year released and release site groups. Facets are split by run."
-#|   - "Smolt-adult return calculated across julien day released. Facets are split by run."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and mean weight release groups."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release month."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release sites."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and julian days."
 
-# ggplot(len_wt_df, aes(x=avg_length, y=avg_weight, group=as.factor(first_release_date_month), color=as.factor(first_release_date_month))) +
-#   geom_point(aes(group=first_release_date_month)) + 
-#   geom_line(aes(x = avg_length, y = prediction,group=first_release_date_month), linewidth=1) +  
-#   # geom_ribbon(aes(ymin = lci,ymax = uci,group=first_release_date_month,color = as.factor(first_release_date_month)),alpha = 0.1) +
-#   # facet_wrap(.~avg_weight, ncol=1)+
-#   # theme_minimal() +
-#   # labs(x = "Brood Year", y = "Predicted SAR (%)", color="Release Month") +
-#   # scale_x_continuous(breaks=seq(min(sar_pred$brood_year),max(sar_pred$brood_year),1))+
-#   # scale_y_log10(breaks = scales::breaks_pretty()) +
-#   # scale_y_continuous(trans = "log",
-#   #                    breaks = scales::breaks_pretty()) +
-#   theme(legend.position = "none")#+
-# plot(len_wt_df$avg_weight,len_wt_df$prediction)
+### spawngr sar
+# sar by brood year & mean wt
+ggplot(data=filter(sar_df_fates, fate == "spawngr" & recovery_location_code %in% spawngr_recover),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Mean Weight (g)", title = paste0("Return Location: Spawning Ground"))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
-### sar by brood year & mean wt
-ggplot(data=sar_df,aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
-    geom_boxplot()+
-    geom_point(pch=21,size=2)+
-    facet_wrap(.~run, ncol=1)+
-    labs(x = "Brood Year", y = "SAR (%)", fill = "Mean Weight (g)")+
+# sar by brood year & release month
+ggplot(data=filter(sar_df_fates, fate == "spawngr" & recovery_location_code %in% spawngr_recover),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Month", title = paste0("Return Location: Spawning Ground"))+
     # scale_x_continuous(limits=c(min(sar_df$brood_year),max(sar_df$brood_year)), breaks=seq(min(sar_df$brood_year),max(sar_df$brood_year),1))+
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
-    # theme(axis.text = element_text(size = 15)) +
-    # theme(strip.text = element_text(size = 15)) +
-    # theme(axis.title = element_text(size = 15))
 
-### sar by brood year & release month
-ggplot(data=sar_df,aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
-    geom_boxplot()+
-    geom_point(pch=21,size=2)+
-    facet_wrap(.~run, ncol=1)+
-    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Month")+
-    # scale_x_continuous(limits=c(min(sar_df$brood_year),max(sar_df$brood_year)), breaks=seq(min(sar_df$brood_year),max(sar_df$brood_year),1))+
+# sar by release location
+ggplot(data=filter(sar_df_fates, fate == "spawngr" & recovery_location_code %in% spawngr_recover),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Site", title = paste0("Return Location: Spawning Ground"))+
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
-    # theme(axis.text = element_text(size = 15)) +
-    # theme(strip.text = element_text(size = 15)) +
-    # theme(axis.title = element_text(size = 15))
 
-### sar by release location
-# ggplot(data=sar_df,aes(x=as.factor(brood_year),y=sar, fill=as.factor(first_release_date_month)))+
-ggplot(data=sar_df,aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
-    # geom_boxplot(data=sar_df,aes(x=release_location_code,y=sar, group=release_location_code))+
-    geom_boxplot()+
-    geom_point(pch=21,size=2)+
-    facet_wrap(.~run, ncol=1)+
-    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Site")+
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
-    # theme(axis.text = element_text(size = 15)) +
-    # theme(strip.text = element_text(size = 15)) +
-    # theme(axis.title = element_text(size = 15))
-
-### sar by release timing (jday)
-ggplot(data=sar_df,aes(x=as.factor(jday),y=sar*100))+
+# sar by release timing (jday)
+ggplot(data=filter(sar_df_fates, fate == "spawngr" & recovery_location_code %in% spawngr_recover),aes(x=as.factor(jday),y=sar*100))+
     # geom_hdr() +
-    # geom_point(shape = 21)+
-    geom_boxplot()+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
     # geom_density_2d_filled(alpha = 0.8) +
-    geom_point(alpha = 0.8,pch=21,fill="red") + # Optional: shows raw data points
-    labs(x = "Julien Day", y = "SAR (%)", fill = "Release Site")+
-    facet_wrap(.~run, ncol=1)+
+    labs(x = "Julien Day", y = "SAR (%)", fill = "Release Site", title = paste0("Return Location: Spawning Ground"))+
+    # facet_wrap(.~run, ncol=1)+
     theme(axis.text.x = element_text(angle = 45, hjust = 1))+ # Angle x-axis labels for readability
-    # theme(axis.text = element_text(size = 15)) +
-    # theme(strip.text = element_text(size = 15)) +
-    # theme(axis.title = element_text(size = 15)) +
     theme(legend.position = "none")
 
 
 
-
 ```
 
+Below we report the SAR values shown in the figures above so the reader has access to the individual data points. Note that the figures report SAR in percentages, while the table values are raw values.
+
 ```{r, message=FALSE, warning=FALSE}
-#| label: tbl-data
+#| label: tbl-data4
 #| tbl-cap: 
 #|   - "Smolt-adult return calculated across brood years, mean weight-at-release, and time at release."
 
-sar_df[,c("species","brood_year","first_release_date_month","jday","avg_weight","event_released","sar")]%>%
+sar_spawngr_tab <-sar_df_fates[,c("species","brood_year","release_location_code","recovery_location_code",
+                                  "first_release_date_month","jday","avg_weight","event_released","fate","sar")]%>%
+  filter(., fate == "spawngr") %>%
   rename("month" = first_release_date_month) %>%
-  arrange(brood_year, month,avg_weight) %>%
-  select(-brood_year)%>%
-  kbl(row.names = NA)%>%
-  kable_classic(position="left",full_width = F, html_font = "Cambria")%>%
-  # kable_material_dark() %>%
-  kable_styling(bootstrap_options = c("condensed"))%>%
-  pack_rows(index = table(sar_df$brood_year))
+  arrange(brood_year, month, avg_weight) #%>%
+
+sar_spawngr_tab %>%
+  select(-c(brood_year,fate)) %>%
+  kbl(row.names = NA) %>%
+  kable_classic(position="left",full_width = F, html_font = "Cambria") %>%
+  kable_styling(bootstrap_options = c("condensed")) %>%
+  scroll_box(height = "400px") %>%
+  pack_rows(index = table(sar_spawngr_tab$brood_year))
 
 
 ```
 
+::: {style="margin-bottom: 100px;"}
+:::
+
+
+### Fishery SAR
+
+Paired release-recovery data are filtered for 'fishery' fates in this section, and used to calculate fishery SARs. We first report the recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location. 
+
+```{r, message=FALSE, warning=FALSE}
+#| label: tbl-data5
+#| tbl-cap: 
+#|   - "Recovery locations associated with a 'fishery' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
+
+### fishery sar
+# rRMIS::fishery_lut
+# terminal vs. columbia vs. ocean
+# rec vs. commmercial
+# size-at-release groups & their contribution to fishery types/locations
+
+
+### Table showing release and return locations after data filtering
+fishery_recover <-unique(filter(sar_df_fates, fate=="fishery")$recovery_location_code)
+fishery_recover_name <-list()
+
+for(i in 1:length(fishery_recover)){
+  fishery_recover_name[[i]] <-filter(loc_all, location_code == fishery_recover[i])[1,c("location_code","name","latitude","longitude","psc_region")]
+  }
+
+fishery_recover_sum <-aggregate(number_cwt_estimated~recovery_location_code, data=filter(sar_df_fates, fate=="fishery"),FUN=sum)
+fishery_recover_df <-fishery_recover_name %>% map_df(., ~as.data.frame(.)) %>%
+                                          rename("recovery_location_code" = location_code) %>%
+                                          left_join(., fishery_recover_sum, by="recovery_location_code") %>%
+                                          arrange(desc(number_cwt_estimated))
+
+fishery_recover_df %>%
+  # filter(., location_code %in% hatch_recover) %>%
+  # rename("month" = first_release_date_month) %>%
+  # arrange(brood_year, month,avg_weight) %>%
+  # select(-brood_year)%>%
+  kbl(row.names = NA)%>%
+  kable_classic(position="left",full_width = F, html_font = "Cambria")%>%
+  scroll_box(height = "400px") %>%
+  kable_styling(bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
+```
+
+Hatcheries release treatments affecting sizes at release or timing of release are shown by aggregating the filtered release-return data by the treatment variables size-at-release, release month, release site, and julian day of release,  
+
+```{r, message=FALSE, warning=FALSE}
+#| layout-ncol: 2
+#| label: fig-dat3
+#| fig-cap: 
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and mean weight release groups."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release month."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release sites."
+#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and julian days."
+
+### spawngr sar
+# sar by brood year & mean wt
+ggplot(data=filter(sar_df_fates, fate == "fishery" & recovery_location_code %in% fishery_recover),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Mean Weight (g)", title = paste0("Return Location: Fisheries"))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+# sar by brood year & release month
+ggplot(data=filter(sar_df_fates, fate == "fishery" & recovery_location_code %in% fishery_recover),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Month", title = paste0("Return Location: Fisheries"))+
+    # scale_x_continuous(limits=c(min(sar_df$brood_year),max(sar_df$brood_year)), breaks=seq(min(sar_df$brood_year),max(sar_df$brood_year),1))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
+
+# sar by release location
+ggplot(data=filter(sar_df_fates, fate == "fishery" & recovery_location_code %in% fishery_recover),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
+    # geom_boxplot(data=sar_df,aes(x=release_location_code,y=sar, group=release_location_code))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAR (%)", fill = "Release Site", title = paste0("Return Location: Fisheries"))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
+
+# sar by release timing (jday)
+ggplot(data=filter(sar_df_fates, fate == "fishery" & recovery_location_code %in% fishery_recover),aes(x=as.factor(jday),y=sar*100))+
+    # geom_hdr() +
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+    # geom_density_2d_filled(alpha = 0.8) +
+    labs(x = "Julien Day", y = "SAR (%)", fill = "Release Site", title = paste0("Return Location: Fisheries"))+
+    # facet_wrap(.~run, ncol=1)+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+ # Angle x-axis labels for readability
+    theme(legend.position = "none")
+
+```
+
+Below we report the SAR values shown in the figures above so the reader has access to the individual data points. Note that the figures report SAR in percentages, while the table values are raw values.
+
+```{r, message=FALSE, warning=FALSE}
+#| label: tbl-data6
+#| tbl-cap: 
+#|   - "Smolt-adult return calculated across brood years, mean weight-at-release, and time at release."
+
+sar_fishery_tab <-sar_df_fates[,c("species","brood_year","release_location_code","recovery_location_code",
+                                  "first_release_date_month","jday","avg_weight","event_released","fate","sar")]%>%
+  filter(., fate == "fishery") %>%
+  rename("month" = first_release_date_month) %>%
+  arrange(brood_year, month, avg_weight) #%>%
+
+sar_fishery_tab %>%
+  select(-c(brood_year,fate)) %>%
+  # aggregate(number_cwt_estimated~recovery_location_code, data=.,FUN=sum)%>%
+  kbl(row.names = NA) %>%
+  kable_classic(position="left",full_width = F, html_font = "Cambria") %>%
+  kable_styling(bootstrap_options = c("condensed")) %>%
+  scroll_box(height = "400px") %>%
+  pack_rows(index = table(sar_fishery_tab$brood_year))
+
+
+```
+
+::: {style="margin-bottom: 100px;"}
+:::
+
+
 ## Fit SAR Models
 
-There are a variety of methods that can be employed for summarizing and forecasting SAR. A simple form of this would entail fitting a generalized additive model to the time series of SAR data. Here, we fit generalized additive models assuming a quasi-binomial family and a logit link function to the time series of two components of the smolt-adult-return data: total tags released & total tags lost. Models employed brood year, weight-at-release, and julian day as main effects (release stage, hatchery, & release location coming soon), as well as two-way interactions among these.
+SAR time series are then fit to generalized additive models to summarize trends and identify any potentially significant release treatments. There are a variety of methods that can be employed for summarizing and forecasting SAR. A simple form of this would entail fitting a generalized additive model to the time series of SAR data. Here, we fit generalized additive models assuming a quasi-binomial family and a logit link function to the time series of two components of the smolt-adult-return data: total tags released & total tags lost. Models employed brood year, weight-at-release, and julian day as main effects (release stage, hatchery, & release location coming soon), as well as two-way interactions among these.After model fitting, figures are generated to show the results of the SAR calculations and the selected model fit, including marginal effects.
 
 ```{r fit}
 ################################################################################
 # [FIT_DAT] Prepare datasets for model fitting
 ### Join Release & Return Data for SAR 
-sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated")], by = "tag_code") %>%
-         mutate(avg_weight = round(avg_weight, digits = -1)) %>%
-         aggregate(cbind(event_released,number_cwt_estimated)~species+brood_year+run+release_location_code+hatchery_location_code+
-                                                              first_release_date_month+jday+avg_weight+release_stage_assigned,
-                   data=., FUN=sum)
+# sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated")], by = "tag_code") %>%
+#          mutate(avg_weight = round(avg_weight, digits = -1)) %>%
+#          aggregate(cbind(event_released,number_cwt_estimated)~species+brood_year+run+release_location_code+hatchery_location_code+
+#                                                               first_release_date_month+jday+avg_weight+release_stage_assigned,
+#                    data=., FUN=sum)
+# 
+# sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
+# 
+# if(params$smolt==TRUE){sar_df <-filter(sar_df,release_stage_assigned=="smolt")}
+# sar_df$tags_lost <-sar_df$event_released - sar_df$number_cwt_estimated
+# write.csv(sar_df, paste0(proj_drive,"sar_df_",params$system,"_",params$sp,".csv"))
+# 
+# if(params$sp==1){sar_df <-filter(sar_df, run==params$run)}
+# 
+# k_by <-length(unique(sar_df$brood_year))
+# k_jday <-length(unique(sar_df$jday))
+# k_wt <-length(unique(sar_df$avg_weight))
 
-sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
+sar_df_fit <-sar_df_fates %>% select(-sar) %>%
+                              aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + 
+                                                                                      release_location_code + hatchery_location_code +
+                                                                                      first_release_date_month + jday + avg_weight +
+                                                                                      release_stage_assigned + fate,
+                                                                                      data=., FUN=sum)
 
-if(params$smolt==TRUE){sar_df <-filter(sar_df,release_stage_assigned=="smolt")}
-sar_df$tags_lost <-sar_df$event_released - sar_df$number_cwt_estimated
-write.csv(sar_df, paste0(proj_drive,"sar_df_",params$system,"_",params$sp,".csv"))
+sar_df_fit$sar <-sar_df_fit$number_cwt_estimated/sar_df_fit$event_released
+sar_df_fit$tags_lost <-sar_df_fit$event_released - sar_df_fit$number_cwt_estimated
+sar_df_fit$fate <-as.factor(sar_df_fit$fate)
+# sar_df_fit$run <-as.factor(sar_df_fit$run)
 
-if(params$sp==1){sar_df <-filter(sar_df, run==params$run)}
+write.csv(sar_df_fit, paste0(proj_drive,"sar_df_fit_",params$system,"_",params$sp,".csv"))
 
-k_by <-length(unique(sar_df$brood_year))
-k_jday <-length(unique(sar_df$jday))
-k_wt <-length(unique(sar_df$avg_weight))
+k_by <-length(unique(sar_df_fates$brood_year))
+k_jday <-length(unique(sar_df_fates$jday))
+k_wt <-length(unique(sar_df_fates$avg_weight))
+# k_run <-length(unique(sar_df_fates$run))
+k_fate <-length(unique(sar_df_fates$fate))
 
 
 # (Default) m = 2 penalizes the second derivative (squared curvature), leading to a "visually smooth" fit
 # m = 1 penalizes the first derivative (slope), which can result in a more "piecewise" appearance
-mod <-gam(cbind(round(number_cwt_estimated), round(tags_lost)) ~ 
+mod <-mgcv::gam(cbind(round(number_cwt_estimated), round(tags_lost)) ~ 
+              + fate
               + s(brood_year, bs="ps", m=1, k=k_by)
-              + s(jday, bs="cc", m=2, k=k_jday)
+              # + s(run, bs="ts", m=2, k=k_run)
+              # + s(fate, bs="ts", m=2, k=k_fate)
+              # + s(jday, bs="cc", m=2, k=k_jday)
               + s(avg_weight, bs="ts", m=2, k=k_wt)
-              + te(jday, brood_year, bs = c("cc", "ps")), 
-              family=quasibinomial(link="logit"), data=sar_df, method="REML",
+              + te(jday, brood_year, bs = c("cc", "ps")),
+              family=quasibinomial(link="logit"), data=sar_df_fit, method="REML",
               na.action = "na.fail",
               select=T)
 
-print(summary(mod))
+### fit alternate model without fate
+# sar_df_fit2 <-sar_df %>% 
+#                 select(-c(sar)) %>% 
+#                 filter(.,fishery==50) %>%
+#                 aggregate(cbind(event_released,number_cwt_estimated)~ species + brood_year + avg_weight + jday, data=., FUN=sum)
+#                 
+# sar_df_fit2$tags_lost <-sar_df_fit2$event_released - sar_df_fit2$number_cwt_estimated
+# 
+# mod2 <-mgcv::gam(cbind(round(number_cwt_estimated), round(tags_lost)) ~ 
+#               # + fate
+#               + s(brood_year, bs="ps", m=1, k=k_by)
+#               # + s(run, bs="ts", m=2, k=k_run)
+#               # + s(fate, bs="ts", m=2, k=k_fate)
+#               # + s(jday, bs="cc", m=2, k=k_jday)
+#               + s(avg_weight, bs="ts", m=2, k=k_wt)
+#               + te(jday, brood_year, bs = c("cc", "ps")),
+#               family=quasibinomial(link="logit"), data=sar_df_fit2, method="REML",
+#               na.action = "na.fail",
+#               select=T)
+
+# print(summary(mod))
+flextable::as_flextable(mod)
 # print(mod)
 # print(gam.check(mod))
 
 
 # Make predictions without including "tag_code"
-preds <-predict(mod, newdata = sar_df, type = "response", se.fit = T) |>
+preds <-predict(mod, newdata = sar_df_fit, type = "response", se.fit = T) |>
         as_tibble() |>
         rename(prediction = fit, pred_se = se.fit) |>
         mutate(lci = qnorm(0.025, prediction, pred_se),
@@ -372,78 +767,111 @@ preds <-predict(mod, newdata = sar_df, type = "response", se.fit = T) |>
                # across(lci, ~ case_when(. < 0 ~ 0, .default = .)))
 
 # add predictions
-sar_pred <-sar_df |> bind_cols(preds)
+sar_pred <-sar_df_fit |> bind_cols(preds)
 ```
-
-## Plot Predicted SAR
-
-Generate figures showing the results of the SAR calculations and the selected model fit, including marginal effects.
 
 ```{r, message=FALSE, warning=FALSE}
 #| layout-ncol: 2
-#| label: fig-dat2
+#| label: fig-dat4
 #| fig-cap: 
-#|   - "Predicted smolt-adult return generated from the model fit across brood years, mean weight release groups, and release month."
-#|   - "Predicted smolt-adult return generated from the model fit across brood years, mean weight release groups, and release month."
+#|   - "Predicted smolt-adult return generated from the model fit across fate, brood years, mean weight release groups, and release month."
+#|   - "Predicted smolt-adult return generated from the model fit across fate, brood years, mean weight release groups, and release month."
 #|   - "Raw-calculated vs. Model-predicted smolt-adult return generated from the model fit."
-#|   - "Marginal effects from the model fit showing how combined changes in mean weight at release and release timing (jday) affect smolt-adult-return."
+#|   - "Marginal effects from the model fit showing how combined changes in mean weight at release and release timing (jday) affect smolt-adult-return across fates."
+
 
 #create some plots
 ggplot(sar_pred, aes(x=brood_year,y=sar*100,group=first_release_date_month,color=as.factor(first_release_date_month))) +
   geom_line(aes(x = brood_year, y = prediction*100,group=first_release_date_month), linewidth=1) +  
   geom_ribbon(aes(ymin = lci*100,ymax = uci*100,group=first_release_date_month,color = as.factor(first_release_date_month)),alpha = 0.1) +
   geom_point(aes(group=first_release_date_month)) + 
-  facet_wrap(.~avg_weight, ncol=2)+
-  # theme_minimal() +
+  facet_grid(avg_weight~fate)+
   labs(x = "Brood Year", y = "Predicted SAR (%)", color="Release Month") +
-  scale_x_continuous(breaks=seq(min(sar_pred$brood_year),max(sar_pred$brood_year),1))+
+  scale_x_continuous(breaks=seq(min(sar_pred$brood_year),max(sar_pred$brood_year),2))+
   # scale_y_log10(breaks = scales::breaks_pretty()) +
   # scale_y_continuous(trans = "log",
   #                    breaks = scales::breaks_pretty()) +
   theme(legend.position = "right")+
+  theme(panel.grid.minor = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
-  # theme(axis.text = element_text(size = 15)) +
-  # theme(strip.text = element_text(size = 15)) +
-  # theme(axis.title = element_text(size = 15)) 
 
 
 ggplot(sar_pred, aes(x=brood_year,y=sar*100,group=avg_weight,color=as.factor(avg_weight))) +
   geom_line(aes(x = brood_year, y = prediction*100,group=avg_weight), linewidth=1) +  
   geom_ribbon(aes(ymin = lci*100,ymax = uci*100,group=avg_weight,color = as.factor(avg_weight)),alpha = 0.1) +
   geom_point(aes(group=avg_weight)) + 
-  facet_wrap(.~first_release_date_month, ncol=2)+
-  # theme_minimal() +
+  facet_grid(first_release_date_month~fate)+
+  theme(panel.grid.minor = element_blank()) +
   labs(x = "Brood Year", y = "Predicted SAR (%)", color="Mean Weight (g)") +
-  scale_x_continuous(breaks=seq(min(sar_pred$brood_year),max(sar_pred$brood_year),1))+
+  scale_x_continuous(breaks=seq(min(sar_pred$brood_year),max(sar_pred$brood_year),2))+
   # scale_y_log10(breaks = scales::breaks_pretty()) +
   # scale_y_continuous(trans = "log",
   #                    breaks = scales::breaks_pretty()) +
   theme(legend.position = "right")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
-  # theme(axis.text = element_text(size = 15)) +
-  # theme(strip.text = element_text(size = 15)) +
-  # theme(axis.title = element_text(size = 15)) 
-
-
 
 sar_pred |> 
   ggplot(aes(x = sar*100, y = prediction*100)) + 
   geom_abline(linetype = 2) +
   geom_point(size = 3) +
+  # facet_wrap(.~fate,ncol = 1)+
   # scale_x_log10(breaks = scales::breaks_pretty()) +
   # scale_y_log10(breaks = scales::breaks_pretty()) +
   labs(x = "Raw-calculated SAR (%)", y = "Model-predicted SAR (%)")
 
 
-margfx <-ggpredict(mod, terms = c("jday", "avg_weight"))
-margfx_lab <-as_labeller(c("40" = "Mean Weight = 40",
-                           "50" = "Mean Weight = 50",
-                           "60" = "Mean Weight = 60"))
-plot(margfx, facet = TRUE) + 
-  labs(x = "jday", y = "SAR", title = "Predicted probabilities of SAR")
+margfx     <-ggpredict(mod, terms = c("jday", "avg_weight","fate"))
+plot(margfx, facet = TRUE) + labs(x = "jday", y = "SAR", title = "Predicted probabilities of SAR")
+
+# margfx     <-ggpredict(mod, terms = c("fate", "jday", "avg_weight"))
+# plot(margfx, facet = TRUE) + labs(x = "jday", y = "SAR", title = "Predicted probabilities of SAR")
+
+# margfx_lab <-as_labeller(c("40" = "Mean Weight = 40",
+#                            "50" = "Mean Weight = 50",
+#                            "60" = "Mean Weight = 60"))
+
+```
+::: {style="margin-bottom: 100px;"}
+:::
+
+# Smolt-adult-survival (SAS)
+
+Smolt-adult survival (SAS) represents the survival of a release group when considering all of their possible fates. The "success" of a program will depend on how well the intended fate of those fish matches up with the observed proportion-at-fate. Here, we take release and return data from above and use these data collectively to calculate SAS as the number of fish that were recovered divided by the number released. 
+
+```{r, message=FALSE, warning=FALSE}
+#| layout-ncol: 2
+#| label: fig-dat5
+#| fig-cap: 
+#|   - "Proportion-at-fate of the calculated smolt-adult-return across brood years."
+#|   - "Smolt-adult-survival (SAS) calculated from fate-specific smolt-adult-return relative to a general SAS target for the queried species (red-dashed line)."
+
+if(params$sp=="1"){sas_threshold <-3}
+
+prop_at_fate <-aggregate(cbind(event_released,number_cwt_estimated)~fate+brood_year, data=sar_df_fit, FUN=sum)
+prop_at_fate$sar <-prop_at_fate$number_cwt_estimated/prop_at_fate$event_released
+
+ggplot(prop_at_fate, aes(x = brood_year, y = sar, fill = fate)) +
+  geom_col(colour = "black", position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Pastel1")
+
+sas_df <-sar_df %>% aggregate(number_cwt_estimated~brood_year+tag_code+event_released, data=., FUN=sum) %>%
+                     aggregate(cbind(event_released,number_cwt_estimated)~brood_year, data=., FUN=sum)
+sas_df$sas <-sas_df$number_cwt_estimated/sas_df$event_released
+
+ggplot(data=sas_df, aes(x=as.factor(brood_year), y=sas*100, group=1))+
+    geom_line(fill="black", size=1)+
+    geom_point(pch=21,size=2)+
+    geom_hline(yintercept=sas_threshold, color="red",linetype=2, size=1.2)+
+    scale_y_continuous(limits=c(0,5), breaks=c(seq(0,5,1))) +
+    # facet_wrap(.~run, ncol=1)+
+    labs(x = "Brood Year", y = "SAS (%)", title = paste0("Smolt-adult-survival: system = ",params$system, ", run = ", params$run, ", species = ", params$sp))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 ```
 
 ## References
+
+Independent Scientific Advisory Board (ISAB). 2025. Challenges and opportunities for improved estimation, interpretation, and use of smolt-to-adult return (SAR) and survival (SAS) metrics for salmon and steelhead in the Columbia River Basin. Report ISAB 2025-1. Northwest Power and Conservation Council, Portland, Oregon.
 
 Quinn, T.P. 2018. The behavior and ecology of Pacific salmon and trout. Second Edition. University of Washington Press. ISBN: 9780295743332.
