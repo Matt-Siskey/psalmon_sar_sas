@@ -51,7 +51,7 @@ This script uses WDFW hatchery coded wire tag (CWT) release and return data to f
 
 # Load packages, several aren't used in this workflow
 pacman::p_load(rmisr, httr, magrittr, dplyr, purrr, stringr, tidyverse, knitr, kableExtra, ggplot2, plotly,
-               RColorBrewer, jsonlite, janitor, keyring, mgcv, here, lubridate, tidygam, ggeffects, readr, ggblur)
+               RColorBrewer, jsonlite, janitor, keyring, mgcv, here, lubridate, tidygam, ggeffects, readr)
 
 # Supply API key through keyring to access RMIS server & maintain credential security
 token <- key_get("rmis_api")
