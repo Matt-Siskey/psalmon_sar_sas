@@ -18,3 +18,17 @@ species,system,loc_code,loc_name,loc_col
 1,r5_cowlitz,3F42001^^260668^R,CISPUS R    ,release_location_code
 1,r5_cowlitz,3F42001^^260002^S,COWLITZ R    26.0002,stock_location_code
 1,r5_cowlitz,3F42001^^260002^S03,COWLITZ SAL HATCHERY,stock_location_code
+1,r4_snohomish,3F10308^^070943^H,WALLACE R HATCHERY,hatchery_location_code
+1,r4_snohomish,3F10308^^070943^R,MAY CR       07.0943,release_location_code
+1,r4_snohomish,3F10308^^070012^R02,SKYKOMISH R  07.0012,release_location_code
+1,r4_snohomish,3F10308^^070012^R03,SKYKOMISH R -SF (07),release_location_code
+1,r4_snohomish,3F10308^^070001^R,TULALIP CR   07.0001,release_location_code
+1,r4_snohomish,3F10308^^070881^R,SULTAN R     07.0881,release_location_code
+1,r4_snohomish,3F10308^^070940^R,WALLACE R    07.0940,release_location_code
+1,r4_snohomish,3F10308^^070951^R,WALLACE R-NF 07.0951,release_location_code
+3,r4_snohomish,3F10308^^070973^H,REITER PONDS,hatchery_location_code
+3,r4_snohomish,3F10308^^070012^R02,SKYKOMISH R  07.0012,release_location_code
+3,r4_snohomish,3F10308^^070012^S02,SKYKOMISH R  07.0012,stock_location_code
+1,r6_elwha,3F10806^^180272^H,,hatchery_location_code
+1,r6_elwha,3F10806^^180272^S,,stock_location_code
+1,r6_elwha,3F10806^^180272^R,,release_location_code

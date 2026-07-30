@@ -1,11 +1,12 @@
+# rm(list=ls())
 library(quarto)
 library(glue)
 
-system_param   <-"r5_cowlitz"
+system_param   <-"r4_snohomish"
 species_param  <-"1"
-run_param      <-"1"
+run_param      <-"2"
 yr_trim_param  <-"true"
-yr_start_param <-2013
+yr_start_param <-2010
 yr_end_param   <-2020
 smolt_param    <-"true"
 wd             <-"C:/Users/sism1477/OneDrive - Washington State Executive Branch Agencies/DFW-Team FP Westside Hatchery MandE - R/psalmon_sar_sas/"
