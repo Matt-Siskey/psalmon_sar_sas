@@ -21,10 +21,10 @@ echo: true
 params:
   smolt: true
   sp: "1"
-  run: "1"
-  system: "r5_lewis"
+  run: "2"
+  system: "r4_snohomish"
   yr_trim: true
-  yr_start:  2013
+  yr_start:  2010
   yr_end: 2020
 
 ---
@@ -72,10 +72,6 @@ ruleset <-read.csv(paste0(proj_drive,"data/hatchery_program_ruleset.csv",sep="")
 
 param_tab <-data.frame(params=c("system","species","run","start_yr","end_yr"),
                        value=c(params$system,params$sp,params$run,params$yr_start,params$yr_end))
-
-
-
-
 
 param_tab %>%
   kbl(format="html", row.names = NA)%>%
@@ -131,7 +127,9 @@ rel_df <-map_df(rel_h, ~as.data.frame(.))
 
 
 ### Assign release stage based on length-at-smolt and length-weight relationship
-len_wt_df <-rel_df %>% drop_na(avg_length)
+len_wt_temp <-rel_df %>% drop_na(avg_length) 
+len_wt_df <-len_wt_temp %>% filter(avg_length >= (quantile(avg_length, 0.25) - 1.5 * IQR(avg_length)) &
+                                   avg_length <= (quantile(avg_length, 0.75) + 1.5 * IQR(avg_length)))
 len_wt_df <-len_wt_df[order(len_wt_df$avg_length), ]
 len_wt_fit <-lm(log(avg_weight) ~ avg_length, data=len_wt_df)
 # summary(len_wt_fit)
@@ -175,8 +173,10 @@ rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
                                 data=., FUN=sum) %>%
                       rename(tag_code = tag_code_or_release_id)
 
-if(params$yr_trim==TRUE){rel_agg <-filter(rel_agg, brood_year %in% seq(params$yr_start,params$yr_end,1))}
-if(params$smolt==TRUE){rel_agg <-filter(rel_agg,release_stage_assigned=="smolt")}
+# if(params$yr_trim==TRUE){rel_agg <-filter(rel_agg, brood_year %in% seq(params$yr_start,params$yr_end,1))}
+# if(params$smolt==TRUE){rel_agg <-filter(rel_agg,release_stage_assigned=="smolt")}
+if(params$yr_trim=="true"){rel_agg <-filter(rel_agg, brood_year %in% seq(params$yr_start,params$yr_end,1))}
+if(params$smolt=="true"){rel_agg <-filter(rel_agg,release_stage_assigned=="smolt")}
 
 ##############################
 # [RETURNS] Pull in WDFW FishBooks return data
@@ -323,10 +323,9 @@ sar_df_fates %>% select(-sar) %>%
 
 ```
 
-::: {style="margin-bottom: 100px;"}
-:::
+::: {.panel-tabset}
 
-### Hatchery SAR
+## Hatchery SAR
 
 Paired release-recovery data are filtered for 'hatchery' fates in this section, and used to calculate hatchery SARs. We first report the recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location. There will likely be strays present, but we want to report a 'return to rack' for the hatchery to inform program performance and broodstock collection. Therefore, we filter these stray fish out here, and will re-incorporate them later in the summation of fate-specific SARs for calculation of SAS. Therefore, all hatchery SAR results will be for the list of location_codes categorized as hatchery_location_code in the metadata ruleset (Table 1).
 
@@ -334,6 +333,20 @@ Paired release-recovery data are filtered for 'hatchery' fates in this section, 
 #| label: tbl-data1
 #| tbl-cap: 
 #|   - "Recovery locations associated with a 'hatchery' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
+
+# Plot.rectY(data, 
+#   Plot.stackY(
+#     Plot.binX( 
+#       {y: "count"}, 
+#       {x: "body_mass_g", fill: "species", thresholds: 20})
+#     )
+#   ).plot({
+#     facet: {
+#       data,
+#       x: "sex"
+#     },
+#     marks: [Plot.frame()]
+#   })
 
 ### Table showing release and return locations after data filtering
 hatch_recover <-unique(filter(sar_df_fates, fate=="hatchery")$recovery_location_code)
@@ -432,10 +445,7 @@ sar_hatch_tab %>%
 
 ```
 
-::: {style="margin-bottom: 100px;"}
-:::
-
-### Spawning Ground SAR
+## Spawning Ground SAR
 
 Paired release-recovery data are filtered for 'spawngr' fates in this section, and used to calculate spawning ground SARs. We first report the recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location. There may be strays present, because more work is needed to identify spawning grounds associated with stocks of interest.
 
@@ -545,10 +555,7 @@ sar_spawngr_tab %>%
 
 ```
 
-::: {style="margin-bottom: 100px;"}
-:::
-
-### Fishery SAR
+## Fishery SAR
 
 Paired release-recovery data are filtered for 'fishery' fates in this section, and used to calculate fishery SARs. We first report the recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location.
 
@@ -665,7 +672,6 @@ sar_fishery_tab %>%
 
 ```
 
-::: {style="margin-bottom: 100px;"}
 :::
 
 ## Fit SAR Models
