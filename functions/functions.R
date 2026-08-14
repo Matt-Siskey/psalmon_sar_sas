@@ -4,11 +4,12 @@
 ### August 2025
 ###############################################
 
-# get_releases
-source(paste0(proj_drive,"functions/get_releases.R",sep=""))
+# pull_RMIS
+source(paste0(proj_drive,"functions/pull_RMIS.R",sep=""))
 
-# get_returns
-source(paste0(proj_drive,"functions/get_returns.R",sep=""))
+# fate_plots
+source(paste0(proj_drive,"functions/fate_plots.R",sep=""))
 
 # make_fit_dat
 source(paste0(proj_drive,"functions/make_fit_dat.R",sep=""))
+

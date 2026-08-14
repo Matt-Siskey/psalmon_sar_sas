@@ -1,0 +1,88 @@
+"species","run","location_code","loc_col","name","region"
+"2","3","3F42001^^250131^H","hatchery_location_code","GRAYS RIVER HATCHERY",5
+"1","3","3F42001^^250131^H","hatchery_location_code","GRAYS RIVER HATCHERY",5
+"3","4","3F42001^^250131^H","hatchery_location_code","GRAYS RIVER HATCHERY",5
+"2","7","3F42001^^250131^H","hatchery_location_code","GRAYS RIVER HATCHERY",5
+"3","2","3F42001^^250131^H","hatchery_location_code","GRAYS RIVER HATCHERY",5
+"1","3","3F42001^^250236^H","hatchery_location_code","ELOCHOMAN HATCHERY",5
+"2","7","3F42001^^250236^H","hatchery_location_code","ELOCHOMAN HATCHERY",5
+"3","4","3F42001^^250236^H","hatchery_location_code","ELOCHOMAN HATCHERY",5
+"2","3","3F42001^^250236^H","hatchery_location_code","ELOCHOMAN HATCHERY",5
+"3","2","3F42001^^250236^H","hatchery_location_code","ELOCHOMAN HATCHERY",5
+"3","4","3F42001^^250247^H","hatchery_location_code","BEAVER CR HATCHERY",5
+"3","2","3F42001^^250247^H","hatchery_location_code","BEAVER CR HATCHERY",5
+"2","7","3F42001^^250247^H","hatchery_location_code","BEAVER CR HATCHERY",5
+"1","3","3F42001^^250247^H","hatchery_location_code","BEAVER CR HATCHERY",5
+"2","3","3F42001^^250247^H","hatchery_location_code","BEAVER CR HATCHERY",5
+"3","4","3F42001^^260002^H01","hatchery_location_code","COWLITZ TROUT HATCHERY",5
+"3","2","3F42001^^260002^H01","hatchery_location_code","COWLITZ TROUT HATCHERY",5
+"3","9","3F42001^^260002^H01","hatchery_location_code","COWLITZ TROUT HATCHERY",5
+"1","1","3F42001^^260002^H01","hatchery_location_code","COWLITZ TROUT HATCHERY",5
+"2","7","3F42001^^260002^H01","hatchery_location_code","COWLITZ TROUT HATCHERY",5
+"1","1","3F42001^^260002^H02","hatchery_location_code","COWLITZ SALMON HATCHERY",5
+"1","3","3F42001^^260002^H02","hatchery_location_code","COWLITZ SALMON HATCHERY",5
+"2","7","3F42001^^260002^H02","hatchery_location_code","COWLITZ SALMON HATCHERY",5
+"3","2","3F42001^^260002^H02","hatchery_location_code","COWLITZ SALMON HATCHERY",5
+"3","4","3F42001^^260002^H02","hatchery_location_code","COWLITZ SALMON HATCHERY",5
+"2","3","3F42001^^260002^H02","hatchery_location_code","COWLITZ SALMON HATCHERY",5
+"1","3","3F42001^^260323^H","hatchery_location_code","NORTH TOUTLE HATCHERY",5
+"3","2","3F42001^^260323^H","hatchery_location_code","NORTH TOUTLE HATCHERY",5
+"2","3","3F42001^^260323^H","hatchery_location_code","NORTH TOUTLE HATCHERY",5
+"1","1","3F42001^^260323^H","hatchery_location_code","NORTH TOUTLE HATCHERY",5
+"1","1","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"2","3","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"1","3","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"2","7","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"3","4","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"1","2","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"3","2","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"3","9","3F42001^^270002^H","hatchery_location_code","KALAMA FALLS HATCHERY",5
+"1","3","3F42001^^270017^H","hatchery_location_code","FALLERT CR HATCHERY",5
+"1","1","3F42001^^270017^H","hatchery_location_code","FALLERT CR HATCHERY",5
+"2","3","3F42001^^270017^H","hatchery_location_code","FALLERT CR HATCHERY",5
+"2","7","3F42001^^270017^H","hatchery_location_code","FALLERT CR HATCHERY",5
+"3","2","3F42001^^270017^H","hatchery_location_code","FALLERT CR HATCHERY",5
+"3","4","3F42001^^270017^H","hatchery_location_code","FALLERT CR HATCHERY",5
+"1","1","3F42001^^270168^H","hatchery_location_code","LEWIS RIVER HATCHERY",5
+"2","3","3F42001^^270168^H","hatchery_location_code","LEWIS RIVER HATCHERY",5
+"2","7","3F42001^^270168^H","hatchery_location_code","LEWIS RIVER HATCHERY",5
+"1","3","3F42001^^270168^H","hatchery_location_code","LEWIS RIVER HATCHERY",5
+"3","2","3F42001^^270168^H","hatchery_location_code","LEWIS RIVER HATCHERY",5
+"3","4","3F42001^^270168^H","hatchery_location_code","LEWIS RIVER HATCHERY",5
+"3","4","3F42001^^270168^H02","hatchery_location_code","MERWIN HATCHERY",5
+"3","2","3F42001^^270168^H02","hatchery_location_code","MERWIN HATCHERY",5
+"3","9","3F42001^^270168^H02","hatchery_location_code","MERWIN HATCHERY",5
+"2","3","3F42001^^270430^H","hatchery_location_code","SPEELYAI HATCHERY",5
+"1","1","3F42001^^270430^H","hatchery_location_code","SPEELYAI HATCHERY",5
+"2","7","3F42001^^270430^H","hatchery_location_code","SPEELYAI HATCHERY",5
+"1","3","3F42001^^270430^H","hatchery_location_code","SPEELYAI HATCHERY",5
+"3","4","3F42001^^270430^H","hatchery_location_code","SPEELYAI HATCHERY",5
+"3","2","3F42001^^270430^H","hatchery_location_code","SPEELYAI HATCHERY",5
+"3","2","3F42001^^280001^H01","hatchery_location_code","VANCOUVER HATCHERY",5
+"3","4","3F42001^^280001^H01","hatchery_location_code","VANCOUVER HATCHERY",5
+"1","3","3F42001^^280159^H","hatchery_location_code","WASHOUGAL HATCHERY",5
+"2","7","3F42001^^280159^H","hatchery_location_code","WASHOUGAL HATCHERY",5
+"2","3","3F42001^^280159^H","hatchery_location_code","WASHOUGAL HATCHERY",5
+"3","2","3F42001^^280159^H","hatchery_location_code","WASHOUGAL HATCHERY",5
+"3","4","3F42001^^280159^H","hatchery_location_code","WASHOUGAL HATCHERY",5
+"3","4","3F42001^^280200^H","hatchery_location_code","SKAMANIA HATCHERY",5
+"3","2","3F42001^^280200^H","hatchery_location_code","SKAMANIA HATCHERY",5
+"3","9","3F42001^^280200^H","hatchery_location_code","SKAMANIA HATCHERY",5
+"1","3","3F42001^^300002^H","hatchery_location_code","KLICKITAT HATCHERY (YKFP)",5
+"1","1","3F42001^^300002^H","hatchery_location_code","KLICKITAT HATCHERY (YKFP)",5
+"2","7","3F42001^^300002^H","hatchery_location_code","KLICKITAT HATCHERY (YKFP)",5
+"2","3","3F42001^^300002^H","hatchery_location_code","KLICKITAT HATCHERY (YKFP)",5
+"1","8","3F42001^^300002^H","hatchery_location_code","KLICKITAT HATCHERY (YKFP)",5
+"1","2","3F42001^^300002^H","hatchery_location_code","KLICKITAT HATCHERY (YKFP)",5
+"2","7","3F42001^^300002^H01","hatchery_location_code","KLICKITAT HATCHERY",5
+"1","3","3F42001^^300002^H01","hatchery_location_code","KLICKITAT HATCHERY",5
+"1","1","3F42001^^300002^H01","hatchery_location_code","KLICKITAT HATCHERY",5
+"1","8","3F42001^^300002^H01","hatchery_location_code","KLICKITAT HATCHERY",5
+"3","2","3F42001^^300106^H","hatchery_location_code","GOLDENDALE HATCHERY",5
+"3","4","3F42001^^300106^H","hatchery_location_code","GOLDENDALE HATCHERY",5
+"1","3","5F33201^^H1^^^^^21","hatchery_location_code","BONNEVILLE HATCHERY",5
+"1","1","5F33201^^H1^^^^^21","hatchery_location_code","BONNEVILLE HATCHERY",5
+"3","4","5F33201^^H1^^^^^21","hatchery_location_code","BONNEVILLE HATCHERY",5
+"1","8","5F33201^^H1^^^^^21","hatchery_location_code","BONNEVILLE HATCHERY",5
+"3","2","5F33201^^H1^^^^^21","hatchery_location_code","BONNEVILLE HATCHERY",5
+"2","5","5F33201^^H1^^^^^21","hatchery_location_code","BONNEVILLE HATCHERY",5

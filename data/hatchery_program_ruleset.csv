@@ -1,20 +1,379 @@
-species,system,loc_code,loc_name,loc_col
-1,r5_lewis,3F42001^^270168^H,LEWIS RIVER HATCHERY,hatchery_location_code
-1,r5_lewis,3F42001^^270430^H,SPEELYAI HATCHERY,hatchery_location_code
-1,r5_lewis,3F42001^^270168^R,LEWIS R      27.0168,release_location_code
-1,r5_lewis,3F42001^^270168^R01,LEWIS R -NF  27.0168,release_location_code
-1,r5_lewis,3F42001^^270168^R02,LK MERWIN     (27),release_location_code
-1,r5_lewis,3F42001^^280159^R,WASHOUGAL R  28.0159,release_location_code
-1,r5_lewis,3F42001^^270327^R,JOHNSON CR   27.0327,release_location_code
-1,r5_lewis,3F42001^^270339^R,CEDAR CR     27.0339,release_location_code
-1,r5_lewis,3F42001^^270173^R,LEWIS R -EF  27.0173,release_location_code
-1,r5_lewis,3F42001^^270168^S,LEWIS R      27.0168,stock_location_code
-1,r5_lewis,3F42001^^270168^S04,LEWIS RIVER HATCHERY,stock_location_code
-1,r5_cowlitz,3F42001^^260002^H02,COWLITZ SALMON HATCHERY,hatchery_location_code
-1,r5_cowlitz,3F42001^^260002^R,COWLITZ R    26.0002,release_location_code
-1,r5_cowlitz,3F42001^^260002^R02,COWLITZ R -UPPER,release_location_code
-1,r5_cowlitz,3F551^26^NS69KZ^R01,SWOFFORD PD (LEWI),release_location_code
-1,r5_cowlitz,3F42001^^260002^R07,COWLITZ R @ MAYFIELD,release_location_code
-1,r5_cowlitz,3F42001^^260668^R,CISPUS R    ,release_location_code
-1,r5_cowlitz,3F42001^^260002^S,COWLITZ R    26.0002,stock_location_code
-1,r5_cowlitz,3F42001^^260002^S03,COWLITZ SAL HATCHERY,stock_location_code
+species,run,loc_code,loc_col,name,region,system
+1,3,3F42001^^330002^H01,hatchery_location_code,LYONS FERRY HATCHERY,1,r1_lyons
+3,2,3F42001^^330002^H01,hatchery_location_code,LYONS FERRY HATCHERY,1,r1_lyons
+1,8,3F42001^^330002^H01,hatchery_location_code,LYONS FERRY HATCHERY,1,r1_lyons
+1,1,3F42001^^330002^H01,hatchery_location_code,LYONS FERRY HATCHERY,1,r1_lyons
+3,2,3F42001^^350009^H,hatchery_location_code,TUCANNON HATCHERY,1,r1_tucannon
+1,1,3F42001^^350009^H,hatchery_location_code,TUCANNON HATCHERY,1,r1_tucannon
+3,2,3F42001^^550003^H01,hatchery_location_code,SPOKANE HATCHERY,1,r1_spokane
+1,2,3F42001^^580428^H01,hatchery_location_code,SHERMAN CR HATCHERY,1,r1_sherman
+1,8,5F33438^^H38^^^^21,hatchery_location_code,IRRIGON HATCHERY,1,r1_irrigon
+3,2,5F33438^^H38^^^^21,hatchery_location_code,IRRIGON HATCHERY,1,r1_irrigon
+1,3,5F33438^^H38^^^^21,hatchery_location_code,IRRIGON HATCHERY,1,r1_irrigon
+1,1,5F33438^^H38^^^^21,hatchery_location_code,IRRIGON HATCHERY,1,r1_irrigon
+1,7,5F33438^^H38^^^^21,hatchery_location_code,IRRIGON HATCHERY,1,r1_irrigon
+3,2,5F33530^^H30^^^^21,hatchery_location_code,WALLOWA HATCHERY,1,r1_wallowa
+1,1,5F33530^^H30^^^^21,hatchery_location_code,WALLOWA HATCHERY,1,r1_wallowa
+3,2,3F42001^^411199^H,hatchery_location_code,COLUMBIA BASIN HATCHERY,2,r2_colbasin
+2,3,3F42001^^440001^H04,hatchery_location_code,TURTLE ROCK HATCHERY,2,r2_turtle
+1,2,3F42001^^440001^H04,hatchery_location_code,TURTLE ROCK HATCHERY,2,r2_turtle
+3,2,3F42001^^440001^H04,hatchery_location_code,TURTLE ROCK HATCHERY,2,r2_turtle
+1,3,3F42001^^440001^H04,hatchery_location_code,TURTLE ROCK HATCHERY,2,r2_turtle
+2,7,3F42001^^440001^H04,hatchery_location_code,TURTLE ROCK HATCHERY,2,r2_turtle
+1,1,3F42001^^440001^H04,hatchery_location_code,TURTLE ROCK HATCHERY,2,r2_turtle
+3,2,3F42001^^440001^H05,hatchery_location_code,EASTBANK HATCHERY,2,r2_eastbank
+1,2,3F42001^^440001^H05,hatchery_location_code,EASTBANK HATCHERY,2,r2_eastbank
+1,1,3F42001^^440001^H05,hatchery_location_code,EASTBANK HATCHERY,2,r2_eastbank
+1,1,3F42001^^450474^H,hatchery_location_code,LEAVENWORTH HATCHERY,2,r2_leavenworth
+2,3,3F42001^^450474^H,hatchery_location_code,LEAVENWORTH HATCHERY,2,r2_leavenworth
+3,2,3F42001^^450474^H,hatchery_location_code,LEAVENWORTH HATCHERY,2,r2_leavenworth
+3,2,3F42001^^450759^H,hatchery_location_code,CHIWAWA HATCHERY,2,r2_chiwawa
+1,1,3F42001^^450759^H,hatchery_location_code,CHIWAWA HATCHERY,2,r2_chiwawa
+1,2,3F42001^^470001^H02,hatchery_location_code,WELLS HATCHERY,2,r2_wells
+3,2,3F42001^^470001^H02,hatchery_location_code,WELLS HATCHERY,2,r2_wells
+1,3,3F42001^^470001^H02,hatchery_location_code,WELLS HATCHERY,2,r2_wells
+2,3,3F42001^^470001^H02,hatchery_location_code,WELLS HATCHERY,2,r2_wells
+1,2,3F42001^^470052^H,hatchery_location_code,CHELAN HATCHERY,2,r2_chelan
+3,2,3F42001^^470052^H,hatchery_location_code,CHELAN HATCHERY,2,r2_chelan
+3,2,3F42001^^470052^H02,hatchery_location_code,CHELAN PUD HATCHERY,2,r2_chelan
+1,2,3F42001^^470052^H02,hatchery_location_code,CHELAN PUD HATCHERY,2,r2_chelan
+1,1,3F42001^^480002^H03,hatchery_location_code,METHOW HATCHERY,2,r2_methow
+3,2,3F42001^^480002^H03,hatchery_location_code,METHOW HATCHERY,2,r2_methow
+1,2,3F42001^^480002^H03,hatchery_location_code,METHOW HATCHERY,2,r2_methow
+2,3,3F42001^^480002^H03,hatchery_location_code,METHOW HATCHERY,2,r2_methow
+1,1,3F42001^^490325^H01,hatchery_location_code,SIMILKAMEEN HATCHERY,2,r2_similkameen
+1,2,3F42001^^490325^H01,hatchery_location_code,SIMILKAMEEN HATCHERY,2,r2_similkameen
+3,2,3F42001^^490325^H01,hatchery_location_code,SIMILKAMEEN HATCHERY,2,r2_similkameen
+1,2,3F42001^^470052^H01,hatchery_location_code,CHELAN FALLS HATCHERY,2,r2_chelan
+1,1,3F42001^^490138^H02,hatchery_location_code,CHIEF JOSEPH HATCHERY,2,r2_chiefjo
+1,2,3F42001^^490138^H02,hatchery_location_code,CHIEF JOSEPH HATCHERY,2,r2_chiefjo
+3,2,3F42001^^360001^H04,hatchery_location_code,RINGOLD SPRINGS HATCHERY,3,r3_ringold
+1,3,3F42001^^360001^H04,hatchery_location_code,RINGOLD SPRINGS HATCHERY,3,r3_ringold
+2,7,3F42001^^360001^H04,hatchery_location_code,RINGOLD SPRINGS HATCHERY,3,r3_ringold
+1,1,3F42001^^360001^H04,hatchery_location_code,RINGOLD SPRINGS HATCHERY,3,r3_ringold
+2,3,3F42001^^360001^H04,hatchery_location_code,RINGOLD SPRINGS HATCHERY,3,r3_ringold
+1,8,3F42001^^360001^H04,hatchery_location_code,RINGOLD SPRINGS HATCHERY,3,r3_ringold
+3,4,3F42001^^360001^H06,hatchery_location_code,MESEBERG HATCHERY,3,r3_meseberg
+1,3,3F42001^^360126^H,hatchery_location_code,PRIEST RAPIDS HATCHERY,3,r3_priest
+1,1,3F42001^^360126^H,hatchery_location_code,PRIEST RAPIDS HATCHERY,3,r3_priest
+1,8,3F42001^^360126^H,hatchery_location_code,PRIEST RAPIDS HATCHERY,3,r3_priest
+3,2,3F42001^^360126^H,hatchery_location_code,PRIEST RAPIDS HATCHERY,3,r3_priest
+3,2,3F42001^^370002^H,hatchery_location_code,YAKIMA HATCHERY,3,r3_yakima
+1,1,3F42001^^370002^H,hatchery_location_code,YAKIMA HATCHERY,3,r3_yakima
+2,3,3F42001^^370002^H05,hatchery_location_code,PROSSER HATCHERY,3,r3_prosser
+1,3,3F42001^^370002^H05,hatchery_location_code,PROSSER HATCHERY,3,r3_prosser
+1,7,3F42001^^370002^H05,hatchery_location_code,PROSSER HATCHERY,3,r3_prosser
+1,8,3F42001^^370002^H05,hatchery_location_code,PROSSER HATCHERY,3,r3_prosser
+1,2,3F42001^^370002^H05,hatchery_location_code,PROSSER HATCHERY,3,r3_prosser
+3,2,3F42001^^380003^H02,hatchery_location_code,NACHES HATCHERY,3,r3_naches
+1,1,3F42001^^390002^H30,hatchery_location_code,CLE ELUM HATCHERY,3,r3_cleelum
+1,1,3F10107^^010120^H,hatchery_location_code,LUMMI HATCHERY -POND,4,r4_lummi
+1,3,3F10107^^010120^H,hatchery_location_code,LUMMI HATCHERY -POND,4,r4_lummi
+1,3,3F10107^^010156^H,hatchery_location_code,MAMOYA POND HATCHERY,4,r4_mamoya
+1,1,3F10107^^010273^H,hatchery_location_code,SKOOKUM CR HATCHERY,4,r4_skookum
+2,3,3F10107^^010273^H,hatchery_location_code,SKOOKUM CR HATCHERY,4,r4_skookum
+1,3,3F10107^^010273^H,hatchery_location_code,SKOOKUM CR HATCHERY,4,r4_skookum
+3,4,3F10107^^010273^H,hatchery_location_code,SKOOKUM CR HATCHERY,4,r4_skookum
+1,1,3F10107^^010406^H,hatchery_location_code,KENDALL CR HATCHERY,4,r4_kendall
+1,3,3F10107^^010406^H,hatchery_location_code,KENDALL CR HATCHERY,4,r4_kendall
+3,4,3F10107^^010406^H,hatchery_location_code,KENDALL CR HATCHERY,4,r4_kendall
+2,3,3F10107^^010406^H,hatchery_location_code,KENDALL CR HATCHERY,4,r4_kendall
+1,2,3F10107^^010406^H,hatchery_location_code,KENDALL CR HATCHERY,4,r4_kendall
+1,3,3F10107^^010566^H01,hatchery_location_code,WHATCOM CR HATCHERY,4,r4_whatcom
+3,4,3F10107^^010566^H01,hatchery_location_code,WHATCOM CR HATCHERY,4,r4_whatcom
+3,4,3F10107^^010619^H,hatchery_location_code,LK WHATCOM HATCHERY,4,r4_whatcom
+3,4,3F10107^^010626^H,hatchery_location_code,BELLINGHAM HATCHERY,4,r4_bellingham
+3,2,3F10107^^010626^H,hatchery_location_code,BELLINGHAM HATCHERY,4,r4_bellingham
+1,3,3F10107^^030017^H,hatchery_location_code,SAMISH HATCHERY,4,r4_samish
+5,3,3F10208^^030268^H,hatchery_location_code,UPPER SKAGIT HATCHERY,4,r4_skagit
+3,4,3F10208^^030268^H,hatchery_location_code,UPPER SKAGIT HATCHERY,4,r4_skagit
+5,3,3F10208^^030435^H34,hatchery_location_code,BAKER LK HATCHERY,4,r4_baker
+1,1,3F10208^^031421^H,hatchery_location_code,MARBLEMOUNT HATCHERY,4,r4_marblemount
+1,3,3F10208^^031421^H,hatchery_location_code,MARBLEMOUNT HATCHERY,4,r4_marblemount
+3,4,3F10208^^031421^H,hatchery_location_code,MARBLEMOUNT HATCHERY,4,r4_marblemount
+1,2,3F10208^^031421^H,hatchery_location_code,MARBLEMOUNT HATCHERY,4,r4_marblemount
+2,3,3F10208^^031421^H,hatchery_location_code,MARBLEMOUNT HATCHERY,4,r4_marblemount
+2,3,3F10308^^050131^H,hatchery_location_code,HARVEY CR HATCHERY,4,r4_harvey
+1,2,3F10308^^050131^H,hatchery_location_code,HARVEY CR HATCHERY,4,r4_harvey
+5,3,3F10308^^050131^H,hatchery_location_code,HARVEY CR HATCHERY,4,r4_harvey
+3,4,3F10308^^050131^H,hatchery_location_code,HARVEY CR HATCHERY,4,r4_harvey
+3,3,3F10308^^050131^H,hatchery_location_code,HARVEY CR HATCHERY,4,r4_harvey
+1,3,3F10308^^050131^H,hatchery_location_code,HARVEY CR HATCHERY,4,r4_harvey
+3,4,3F10308^^050168^H,hatchery_location_code,ARLINGTON HATCHERY,4,r4_arlington
+3,2,3F10308^^050168^H,hatchery_location_code,ARLINGTON HATCHERY,4,r4_arlington
+2,3,3F10308^^050170AH,hatchery_location_code,NORTH FORK HATCHERY,4,r4_northfork
+2,3,3F10308^^050322^H,hatchery_location_code,JIM CR HATCHERY,4,r4_jim
+1,3,3F10308^^050358AH,hatchery_location_code,BRENNER HATCHERY,4,r4_brenner
+1,1,3F10308^^070005^H,hatchery_location_code,BATTLE CR HATCHERY,4,r4_battle
+5,3,3F10308^^070005^H,hatchery_location_code,BATTLE CR HATCHERY,4,r4_battle
+2,3,3F10308^^070005^H,hatchery_location_code,BATTLE CR HATCHERY,4,r4_battle
+3,4,3F10308^^070440^H,hatchery_location_code,TOKUL CR HATCHERY,4,r4_tokul
+3,2,3F10308^^070440^H,hatchery_location_code,TOKUL CR HATCHERY,4,r4_tokul
+1,3,3F10308^^070943^H,hatchery_location_code,WALLACE R HATCHERY,4,r4_wallace
+1,2,3F10308^^070943^H,hatchery_location_code,WALLACE R HATCHERY,4,r4_wallace
+1,1,3F10308^^070943^H,hatchery_location_code,WALLACE R HATCHERY,4,r4_wallace
+3,4,3F10308^^070943^H,hatchery_location_code,WALLACE R HATCHERY,4,r4_wallace
+3,2,3F10308^^070943^H,hatchery_location_code,WALLACE R HATCHERY,4,r4_wallace
+1,3,3F10510^^080028^H,hatchery_location_code,PORTAGE BAY HATCHERY,4,r4_portage
+3,4,3F10510^^080028^H,hatchery_location_code,PORTAGE BAY HATCHERY,4,r4_portage
+2,3,3F10510^^080028^H,hatchery_location_code,PORTAGE BAY HATCHERY,4,r4_portage
+1,3,3F10510^^080028^H02,hatchery_location_code,MONTLAKE HATCHERY,4,r4_montlake
+1,3,3F10510^^080178^H,hatchery_location_code,ISSAQUAH HATCHERY,4,r4_issaquah
+3,4,3F10510^^080178^H,hatchery_location_code,ISSAQUAH HATCHERY,4,r4_issaquah
+3,4,3F10510^^080299^H02,hatchery_location_code,CEDAR RIVER HATCHERY,4,r4_cedar
+1,3,3F10510^^090072^H,hatchery_location_code,SOOS CREEK HATCHERY,4,r4_soos
+1,1,3F10510^^090072^H,hatchery_location_code,SOOS CREEK HATCHERY,4,r4_soos
+3,2,3F10510^^090072^H,hatchery_location_code,SOOS CREEK HATCHERY,4,r4_soos
+3,4,3F10510^^090072^H,hatchery_location_code,SOOS CREEK HATCHERY,4,r4_soos
+1,2,3F10510^^090072^H,hatchery_location_code,SOOS CREEK HATCHERY,4,r4_soos
+3,2,3F10510^^090125^H,hatchery_location_code,ICY CR HATCHERY,4,r4_icy
+1,3,3F10510^^090125^H,hatchery_location_code,ICY CR HATCHERY,4,r4_icy
+3,9,3F10510^^090125^H,hatchery_location_code,ICY CR HATCHERY,4,r4_icy
+3,4,3F10510^^090125^H,hatchery_location_code,ICY CR HATCHERY,4,r4_icy
+1,2,3F10510^^090125^H,hatchery_location_code,ICY CR HATCHERY,4,r4_icy
+1,1,3F10510^^090125^H,hatchery_location_code,ICY CR HATCHERY,4,r4_icy
+3,4,3F10510^^090147^H,hatchery_location_code,PALMER HATCHERY,4,r4_palmer
+3,2,3F10510^^090147^H,hatchery_location_code,PALMER HATCHERY,4,r4_palmer
+1,3,3F10510^^090147^H,hatchery_location_code,PALMER HATCHERY,4,r4_palmer
+5,3,3F10208^^031064^H,hatchery_location_code,SAUK-SUIATTLE HATCHERY,4,r4_sauk
+2,3,3F42001^^250131^H,hatchery_location_code,GRAYS RIVER HATCHERY,5,r5_grays
+1,3,3F42001^^250131^H,hatchery_location_code,GRAYS RIVER HATCHERY,5,r5_grays
+3,4,3F42001^^250131^H,hatchery_location_code,GRAYS RIVER HATCHERY,5,r5_grays
+2,7,3F42001^^250131^H,hatchery_location_code,GRAYS RIVER HATCHERY,5,r5_grays
+3,2,3F42001^^250131^H,hatchery_location_code,GRAYS RIVER HATCHERY,5,r5_grays
+1,3,3F42001^^250236^H,hatchery_location_code,ELOCHOMAN HATCHERY,5,r5_elochoman
+2,7,3F42001^^250236^H,hatchery_location_code,ELOCHOMAN HATCHERY,5,r5_elochoman
+3,4,3F42001^^250236^H,hatchery_location_code,ELOCHOMAN HATCHERY,5,r5_elochoman
+2,3,3F42001^^250236^H,hatchery_location_code,ELOCHOMAN HATCHERY,5,r5_elochoman
+3,2,3F42001^^250236^H,hatchery_location_code,ELOCHOMAN HATCHERY,5,r5_elochoman
+3,4,3F42001^^250247^H,hatchery_location_code,BEAVER CR HATCHERY,5,r5_beaver
+3,2,3F42001^^250247^H,hatchery_location_code,BEAVER CR HATCHERY,5,r5_beaver
+2,7,3F42001^^250247^H,hatchery_location_code,BEAVER CR HATCHERY,5,r5_beaver
+1,3,3F42001^^250247^H,hatchery_location_code,BEAVER CR HATCHERY,5,r5_beaver
+2,3,3F42001^^250247^H,hatchery_location_code,BEAVER CR HATCHERY,5,r5_beaver
+3,4,3F42001^^260002^H01,hatchery_location_code,COWLITZ TROUT HATCHERY,5,r5_cowlitz
+3,2,3F42001^^260002^H01,hatchery_location_code,COWLITZ TROUT HATCHERY,5,r5_cowlitz
+3,9,3F42001^^260002^H01,hatchery_location_code,COWLITZ TROUT HATCHERY,5,r5_cowlitz
+1,1,3F42001^^260002^H01,hatchery_location_code,COWLITZ TROUT HATCHERY,5,r5_cowlitz
+2,7,3F42001^^260002^H01,hatchery_location_code,COWLITZ TROUT HATCHERY,5,r5_cowlitz
+1,1,3F42001^^260002^H02,hatchery_location_code,COWLITZ SALMON HATCHERY,5,r5_cowlitz
+1,3,3F42001^^260002^H02,hatchery_location_code,COWLITZ SALMON HATCHERY,5,r5_cowlitz
+2,7,3F42001^^260002^H02,hatchery_location_code,COWLITZ SALMON HATCHERY,5,r5_cowlitz
+3,2,3F42001^^260002^H02,hatchery_location_code,COWLITZ SALMON HATCHERY,5,r5_cowlitz
+3,4,3F42001^^260002^H02,hatchery_location_code,COWLITZ SALMON HATCHERY,5,r5_cowlitz
+2,3,3F42001^^260002^H02,hatchery_location_code,COWLITZ SALMON HATCHERY,5,r5_cowlitz
+1,3,3F42001^^260323^H,hatchery_location_code,NORTH TOUTLE HATCHERY,5,r5_toutle
+3,2,3F42001^^260323^H,hatchery_location_code,NORTH TOUTLE HATCHERY,5,r5_toutle
+2,3,3F42001^^260323^H,hatchery_location_code,NORTH TOUTLE HATCHERY,5,r5_toutle
+1,1,3F42001^^260323^H,hatchery_location_code,NORTH TOUTLE HATCHERY,5,r5_toutle
+1,1,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+2,3,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+1,3,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+2,7,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+3,4,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+1,2,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+3,2,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+3,9,3F42001^^270002^H,hatchery_location_code,KALAMA FALLS HATCHERY,5,r5_kalama
+1,3,3F42001^^270017^H,hatchery_location_code,FALLERT CR HATCHERY,5,r5_fallert
+1,1,3F42001^^270017^H,hatchery_location_code,FALLERT CR HATCHERY,5,r5_fallert
+2,3,3F42001^^270017^H,hatchery_location_code,FALLERT CR HATCHERY,5,r5_fallert
+2,7,3F42001^^270017^H,hatchery_location_code,FALLERT CR HATCHERY,5,r5_fallert
+3,2,3F42001^^270017^H,hatchery_location_code,FALLERT CR HATCHERY,5,r5_fallert
+3,4,3F42001^^270017^H,hatchery_location_code,FALLERT CR HATCHERY,5,r5_fallert
+1,1,3F42001^^270168^H,hatchery_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+2,3,3F42001^^270168^H,hatchery_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+2,7,3F42001^^270168^H,hatchery_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+1,3,3F42001^^270168^H,hatchery_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+3,2,3F42001^^270168^H,hatchery_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+3,4,3F42001^^270168^H,hatchery_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+3,4,3F42001^^270168^H02,hatchery_location_code,MERWIN HATCHERY,5,r5_lewis
+3,2,3F42001^^270168^H02,hatchery_location_code,MERWIN HATCHERY,5,r5_lewis
+3,9,3F42001^^270168^H02,hatchery_location_code,MERWIN HATCHERY,5,r5_lewis
+2,3,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+1,1,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+2,7,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+1,3,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+3,4,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+3,2,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+3,2,3F42001^^280001^H01,hatchery_location_code,VANCOUVER HATCHERY,5,r5_vancouver
+3,4,3F42001^^280001^H01,hatchery_location_code,VANCOUVER HATCHERY,5,r5_vancouver
+1,3,3F42001^^280159^H,hatchery_location_code,WASHOUGAL HATCHERY,5,r5_washougal
+2,7,3F42001^^280159^H,hatchery_location_code,WASHOUGAL HATCHERY,5,r5_washougal
+2,3,3F42001^^280159^H,hatchery_location_code,WASHOUGAL HATCHERY,5,r5_washougal
+3,2,3F42001^^280159^H,hatchery_location_code,WASHOUGAL HATCHERY,5,r5_washougal
+3,4,3F42001^^280159^H,hatchery_location_code,WASHOUGAL HATCHERY,5,r5_washougal
+3,4,3F42001^^280200^H,hatchery_location_code,SKAMANIA HATCHERY,5,r5_skamania
+3,2,3F42001^^280200^H,hatchery_location_code,SKAMANIA HATCHERY,5,r5_skamania
+3,9,3F42001^^280200^H,hatchery_location_code,SKAMANIA HATCHERY,5,r5_skamania
+1,3,3F42001^^300002^H,hatchery_location_code,KLICKITAT HATCHERY (YKFP),5,r5_klickitat
+1,1,3F42001^^300002^H,hatchery_location_code,KLICKITAT HATCHERY (YKFP),5,r5_klickitat
+2,7,3F42001^^300002^H,hatchery_location_code,KLICKITAT HATCHERY (YKFP),5,r5_klickitat
+2,3,3F42001^^300002^H,hatchery_location_code,KLICKITAT HATCHERY (YKFP),5,r5_klickitat
+1,8,3F42001^^300002^H,hatchery_location_code,KLICKITAT HATCHERY (YKFP),5,r5_klickitat
+1,2,3F42001^^300002^H,hatchery_location_code,KLICKITAT HATCHERY (YKFP),5,r5_klickitat
+2,7,3F42001^^300002^H01,hatchery_location_code,KLICKITAT HATCHERY,5,r5_klickitat
+1,3,3F42001^^300002^H01,hatchery_location_code,KLICKITAT HATCHERY,5,r5_klickitat
+1,1,3F42001^^300002^H01,hatchery_location_code,KLICKITAT HATCHERY,5,r5_klickitat
+1,8,3F42001^^300002^H01,hatchery_location_code,KLICKITAT HATCHERY,5,r5_klickitat
+3,2,3F42001^^300106^H,hatchery_location_code,GOLDENDALE HATCHERY,5,r5_goldendale
+3,4,3F42001^^300106^H,hatchery_location_code,GOLDENDALE HATCHERY,5,r5_goldendale
+1,3,5F33201^^H1^^^^^21,hatchery_location_code,BONNEVILLE HATCHERY,5,r5_bonneville
+1,1,5F33201^^H1^^^^^21,hatchery_location_code,BONNEVILLE HATCHERY,5,r5_bonneville
+3,4,5F33201^^H1^^^^^21,hatchery_location_code,BONNEVILLE HATCHERY,5,r5_bonneville
+1,8,5F33201^^H1^^^^^21,hatchery_location_code,BONNEVILLE HATCHERY,5,r5_bonneville
+3,2,5F33201^^H1^^^^^21,hatchery_location_code,BONNEVILLE HATCHERY,5,r5_bonneville
+1,3,3F10412^^150389^H,hatchery_location_code,BIG BEEF CR HATCHERY,6,r6_bigbeef
+1,1,3F10412^^150389^H,hatchery_location_code,BIG BEEF CR HATCHERY,6,r6_bigbeef
+1,3,3F10412^^160005^H,hatchery_location_code,GEORGE ADAMS HATCHERY,6,r6_georgeadams
+1,7,3F10412^^160005^H,hatchery_location_code,GEORGE ADAMS HATCHERY,6,r6_georgeadams
+1,1,3F10412^^160005^H,hatchery_location_code,GEORGE ADAMS HATCHERY,6,r6_georgeadams
+3,4,3F10412^^160005^H,hatchery_location_code,GEORGE ADAMS HATCHERY,6,r6_georgeadams
+1,3,3F10412^^160006^H,hatchery_location_code,MCKERNAN HATCHERY,6,r6_mckernan
+1,7,3F10412^^160006^H,hatchery_location_code,MCKERNAN HATCHERY,6,r6_mckernan
+5,3,3F10412^^160006^H,hatchery_location_code,MCKERNAN HATCHERY,6,r6_mckernan
+5,3,3F10412^^160217^H,hatchery_location_code,ENETAI HATCHERY,6,r6_enetai
+1,3,3F10412^^160217^H,hatchery_location_code,ENETAI HATCHERY,6,r6_enetai
+3,4,3F10412^^160217^H,hatchery_location_code,ENETAI HATCHERY,6,r6_enetai
+1,2,3F10412^^160217^H,hatchery_location_code,ENETAI HATCHERY,6,r6_enetai
+1,3,3F10412^^160222^H,hatchery_location_code,HOODSPORT HATCHERY,6,r6_hoodsport
+3,4,3F10412^^160222^H,hatchery_location_code,HOODSPORT HATCHERY,6,r6_hoodsport
+5,3,3F10412^^160222^H,hatchery_location_code,HOODSPORT HATCHERY,6,r6_hoodsport
+1,1,3F10412^^160222^H,hatchery_location_code,HOODSPORT HATCHERY,6,r6_hoodsport
+1,3,3F10510^^150249^H,hatchery_location_code,CLEAR CR HATCHERY-15,6,r6_clear
+2,3,3F10510^^150249^H,hatchery_location_code,CLEAR CR HATCHERY-15,6,r6_clear
+1,3,3F10510^^150285^H,hatchery_location_code,WEBSTER'S HATCHERY,6,r6_webster
+2,3,3F10510^^150285^H,hatchery_location_code,WEBSTER'S HATCHERY,6,r6_webster
+5,3,3F10510^^150285^H,hatchery_location_code,WEBSTER'S HATCHERY,6,r6_webster
+5,3,3F10510^^150298^H,hatchery_location_code,COWLING CR HATCHERY,6,r6_cowling
+1,3,3F10510^^150299^H,hatchery_location_code,GROVERS CR HATCHERY,6,r6_grovers
+5,3,3F10510^^150299^H,hatchery_location_code,GROVERS CR HATCHERY,6,r6_grovers
+2,3,3F10510^^150299^H,hatchery_location_code,GROVERS CR HATCHERY,6,r6_grovers
+3,4,3F10510^^150299^H,hatchery_location_code,GROVERS CR HATCHERY,6,r6_grovers
+3,4,3F10511^^100027^H,hatchery_location_code,PUYALLUP HATCHERY,6,r6_puyallup
+1,3,3F10511^^100027^H,hatchery_location_code,PUYALLUP HATCHERY,6,r6_puyallup
+1,3,3F10511^^100027^H01,hatchery_location_code,CLARKS CRK HATCHERY,6,r6_clarks
+1,1,3F10511^^100027^H01,hatchery_location_code,CLARKS CRK HATCHERY,6,r6_clarks
+5,3,3F10511^^100027^H01,hatchery_location_code,CLARKS CRK HATCHERY,6,r6_clarks
+2,3,3F10511^^100027^H01,hatchery_location_code,CLARKS CRK HATCHERY,6,r6_clarks
+5,3,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+1,3,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+3,4,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+5,4,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+1,1,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+3,3,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+2,3,3F10511^^100029^H,hatchery_location_code,PUYALLUP TRIBAL HATCHERY,6,r6_puyalluptribe
+1,1,3F10511^^100031^H01,hatchery_location_code,WHITE RIVER HATCHERY,6,r6_white
+3,4,3F10511^^100031^H01,hatchery_location_code,WHITE RIVER HATCHERY,6,r6_white
+1,3,3F10511^^100414^H,hatchery_location_code,VOIGHTS CR HATCHERY,6,r6_voights
+3,4,3F10511^^100414^H,hatchery_location_code,VOIGHTS CR HATCHERY,6,r6_voights
+2,3,3F10511^^100414^H,hatchery_location_code,VOIGHTS CR HATCHERY,6,r6_voights
+1,1,3F10511^^100414^H,hatchery_location_code,VOIGHTS CR HATCHERY,6,r6_voights
+1,3,3F10513^^110013CH,hatchery_location_code,CLEAR CREEK HATCHERY,6,r6_clear
+2,3,3F10513^^110013CH,hatchery_location_code,CLEAR CREEK HATCHERY,6,r6_clear
+5,4,3F10513^^110017AH,hatchery_location_code,KALAMA CR HATCHERY,6,r6_kalama
+1,3,3F10513^^110017AH,hatchery_location_code,KALAMA CR HATCHERY,6,r6_kalama
+2,3,3F10513^^110017AH,hatchery_location_code,KALAMA CR HATCHERY,6,r6_kalama
+1,3,3F10513^^110324^H,hatchery_location_code,MCALLISTER HATCHERY,6,r6_mcallister
+1,3,3F10513^^120007^H01,hatchery_location_code,GARRISON HATCHERY,6,r6_garrison
+1,1,3F10513^^120007^H01,hatchery_location_code,GARRISON HATCHERY,6,r6_garrison
+5,7,3F10513^^120007^H01,hatchery_location_code,GARRISON HATCHERY,6,r6_garrison
+3,4,3F10513^^120007^H01,hatchery_location_code,GARRISON HATCHERY,6,r6_garrison
+1,3,3F10513^^120007^H02,hatchery_location_code,CHAMBERS CR HATCHERY,6,r6_chambers
+3,4,3F10513^^120007^H02,hatchery_location_code,CHAMBERS CR HATCHERY,6,r6_chambers
+3,4,3F10513^^120007^H03,hatchery_location_code,LAKEWOOD HATCHERY,6,r6_lakewood
+3,2,3F10513^^120007^H03,hatchery_location_code,LAKEWOOD HATCHERY,6,r6_lakewood
+1,3,3F10513^^120007^H03,hatchery_location_code,LAKEWOOD HATCHERY,6,r6_lakewood
+3,4,3F10513^^130028^H02,hatchery_location_code,TUMWATER FALLS HATCHERY,6,r6_tumwater
+1,3,3F10513^^130028^H02,hatchery_location_code,TUMWATER FALLS HATCHERY,6,r6_tumwater
+5,3,3F10513^^140025^H,hatchery_location_code,ELSON CR HATCHERY,6,r6_elson
+3,4,3F10513^^140025^H,hatchery_location_code,ELSON CR HATCHERY,6,r6_elson
+1,3,3F10513^^140025^H,hatchery_location_code,ELSON CR HATCHERY,6,r6_elson
+1,3,3F10513^^140049^H,hatchery_location_code,SHELTON HATCHERY(14),6,r6_shelton
+1,3,3F10513^^150048^H,hatchery_location_code,MINTER CR HATCHERY,6,r6_minter
+1,1,3F10513^^150048^H,hatchery_location_code,MINTER CR HATCHERY,6,r6_minter
+2,3,3F10513^^150048^H,hatchery_location_code,MINTER CR HATCHERY,6,r6_minter
+1,3,3F10805^^190148^H,hatchery_location_code,HOKO FALLS HATCHERY,6,r6_hoko
+3,4,3F10805^^190148^H,hatchery_location_code,HOKO FALLS HATCHERY,6,r6_hoko
+2,4,3F10805^^190148^H,hatchery_location_code,HOKO FALLS HATCHERY,6,r6_hoko
+3,3,3F10805^^190148^H,hatchery_location_code,HOKO FALLS HATCHERY,6,r6_hoko
+2,3,3F10805^^190148^H,hatchery_location_code,HOKO FALLS HATCHERY,6,r6_hoko
+1,3,3F10806^^180018^H,hatchery_location_code,DUNGENESS HATCHERY,6,r6_dungeness
+1,1,3F10806^^180018^H,hatchery_location_code,DUNGENESS HATCHERY,6,r6_dungeness
+3,4,3F10806^^180018^H,hatchery_location_code,DUNGENESS HATCHERY,6,r6_dungeness
+3,4,3F10806^^180028^H,hatchery_location_code,HURD CR HATCHERY,6,r6_hurd
+1,1,3F10806^^180028^H,hatchery_location_code,HURD CR HATCHERY,6,r6_hurd
+1,3,3F10806^^180028^H,hatchery_location_code,HURD CR HATCHERY,6,r6_hurd
+1,3,3F10806^^180185^H,hatchery_location_code,MORSE CREEK HATCHERY,6,r6_morse
+1,3,3F10806^^180272^H,hatchery_location_code,ELWHA HATCHERY,6,r6_elwha
+3,4,3F10806^^180272^H,hatchery_location_code,ELWHA HATCHERY,6,r6_elwha
+1,1,3F10806^^180272^H,hatchery_location_code,ELWHA HATCHERY,6,r6_elwha
+1,3,3F10806^^180274^H,hatchery_location_code,LOWER ELWHA HATCHERY,6,r6_elwha
+2,3,3F10806^^180274^H,hatchery_location_code,LOWER ELWHA HATCHERY,6,r6_elwha
+3,4,3F10806^^180274^H,hatchery_location_code,LOWER ELWHA HATCHERY,6,r6_elwha
+5,3,3F10806^^180274^H,hatchery_location_code,LOWER ELWHA HATCHERY,6,r6_elwha
+2,4,3F10806^^180274^H,hatchery_location_code,LOWER ELWHA HATCHERY,6,r6_elwha
+3,3,3F10806^^180274^H,hatchery_location_code,LOWER ELWHA HATCHERY,6,r6_elwha
+1,3,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+3,4,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+1,1,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+5,3,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+3,2,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+1,2,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+2,3,3F21702^^210398^H,hatchery_location_code,QUINAULT LK HATCHERY,6,r6_quinault
+1,1,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+2,2,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+1,3,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+1,2,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+2,3,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+3,4,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+2,7,3F21703^^200096^H02,hatchery_location_code,SOLDUC HATCHERY,6,r6_solduc
+3,4,3F21703^^200096^H04,hatchery_location_code,EAGLE CREEK HATCHERY,6,r6_eagle
+1,2,3F21703^^200096^H04,hatchery_location_code,EAGLE CREEK HATCHERY,6,r6_eagle
+1,1,3F21703^^200096^H04,hatchery_location_code,EAGLE CREEK HATCHERY,6,r6_eagle
+3,4,3F21703^^200162^H02,hatchery_location_code,BOGACHIEL HATCHERY,6,r6_bogachiel
+3,2,3F21703^^200162^H02,hatchery_location_code,BOGACHIEL HATCHERY,6,r6_bogachiel
+1,2,3F21703^^200162^H02,hatchery_location_code,BOGACHIEL HATCHERY,6,r6_bogachiel
+3,9,3F21703^^200162^H02,hatchery_location_code,BOGACHIEL HATCHERY,6,r6_bogachiel
+1,2,3F21703^^200399AH,hatchery_location_code,LONESOME CR HATCHERY,6,r6_lonesome
+3,4,3F21703^^200399AH,hatchery_location_code,LONESOME CR HATCHERY,6,r6_lonesome
+1,3,3F21703^^200423^H,hatchery_location_code,CHALAAT CR HATCHERY,6,r6_chalaat
+3,4,3F21703^^200423^H,hatchery_location_code,CHALAAT CR HATCHERY,6,r6_chalaat
+1,1,3F21703^^200423^H,hatchery_location_code,CHALAAT CR HATCHERY,6,r6_chalaat
+1,3,3F21704^^200004^H,hatchery_location_code,WAATCH CR HATCHERY,6,r6_waatch
+3,4,3F21704^^200010^H,hatchery_location_code,EDUCKET CR HATCHERY,6,r6_educket
+3,3,3F21704^^200010^H,hatchery_location_code,EDUCKET CR HATCHERY,6,r6_educket
+1,3,3F21704^^200010^H,hatchery_location_code,EDUCKET CR HATCHERY,6,r6_educket
+2,3,3F21704^^200010^H,hatchery_location_code,EDUCKET CR HATCHERY,6,r6_educket
+2,4,3F21704^^200010^H,hatchery_location_code,EDUCKET CR HATCHERY,6,r6_educket
+1,3,3F21802^^220004^H,hatchery_location_code,HUMPTULIPS HATCHERY,6,r6_humptulips
+2,7,3F21802^^220004^H,hatchery_location_code,HUMPTULIPS HATCHERY,6,r6_humptulips
+3,4,3F21802^^220004^H,hatchery_location_code,HUMPTULIPS HATCHERY,6,r6_humptulips
+3,2,3F21802^^220004^H,hatchery_location_code,HUMPTULIPS HATCHERY,6,r6_humptulips
+3,2,3F21802^^220240^H,hatchery_location_code,LK ABERDEEN HATCHERY,6,r6_aberdeen
+3,4,3F21802^^220240^H,hatchery_location_code,LK ABERDEEN HATCHERY,6,r6_aberdeen
+3,9,3F21802^^220240^H,hatchery_location_code,LK ABERDEEN HATCHERY,6,r6_aberdeen
+1,3,3F21802^^220240^H,hatchery_location_code,LK ABERDEEN HATCHERY,6,r6_aberdeen
+1,3,3F21802^^220360^H,hatchery_location_code,BINGHAM CR HATCHERY,6,r6_bingham
+2,7,3F21802^^220360^H,hatchery_location_code,BINGHAM CR HATCHERY,6,r6_bingham
+1,1,3F21802^^220360^H,hatchery_location_code,BINGHAM CR HATCHERY,6,r6_bingham
+3,4,3F21802^^220360^H,hatchery_location_code,BINGHAM CR HATCHERY,6,r6_bingham
+3,9,3F21802^^220360^H,hatchery_location_code,BINGHAM CR HATCHERY,6,r6_bingham
+3,4,3F21802^^220363^H,hatchery_location_code,MITCHELL CR HATCHERY,6,r6_mitchell
+2,7,3F21802^^230649^H,hatchery_location_code,CHEHALIS HATCHERY,6,r6_chehalis
+2,7,3F21802^^230761^H,hatchery_location_code,SKOOKUMCHUCK HATCHERY,6,r6_skookumchuck
+3,4,3F21802^^230761^H,hatchery_location_code,SKOOKUMCHUCK HATCHERY,6,r6_skookumchuck
+1,3,3F21902^^240356^H,hatchery_location_code,FORKS CREEK HATCHERY,6,r6_forks
+3,4,3F21902^^240356^H,hatchery_location_code,FORKS CREEK HATCHERY,6,r6_forks
+2,7,3F21902^^240356^H,hatchery_location_code,FORKS CREEK HATCHERY,6,r6_forks
+1,1,3F21902^^240356^H,hatchery_location_code,FORKS CREEK HATCHERY,6,r6_forks
+1,3,3F21902^^240460^H,hatchery_location_code,NEMAH HATCHERY,6,r6_nemah
+3,4,3F21902^^240460^H,hatchery_location_code,NEMAH HATCHERY,6,r6_nemah
+1,3,3F21902^^240543^H,hatchery_location_code,NASELLE HATCHERY,6,r6_naselle
+3,4,3F21902^^240543^H,hatchery_location_code,NASELLE HATCHERY,6,r6_naselle
+2,7,3F21902^^240543^H,hatchery_location_code,NASELLE HATCHERY,6,r6_naselle
+2,3,3F21902^^240543^H,hatchery_location_code,NASELLE HATCHERY,6,r6_naselle
+1,1,3F10412^^160001^H,hatchery_location_code,NF SKOKOMISH HATCHERY,6,r6_skokomish
+2,3,3F10412^^160001^H,hatchery_location_code,NF SKOKOMISH HATCHERY,6,r6_skokomish
+3,4,3F10412^^160001^H,hatchery_location_code,NF SKOKOMISH HATCHERY,6,r6_skokomish
+1,3,3F10511^^100432^H,hatchery_location_code,WILKESON CREEK HATCHERY,6,r6_wilkeson
+5,3,3F10511^^100029^H01,hatchery_location_code,DIRU CREEK HATCHERY,6,r6_diru
