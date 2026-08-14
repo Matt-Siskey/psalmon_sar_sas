@@ -1,0 +1,60 @@
+species,run,system,loc_code,loc_name,loc_col
+1,,r4_snohomish,3F10308^^070001^R,TULALIP CR   07.0001,release_location_code
+1,,r4_snohomish,3F10308^^070012^R02,SKYKOMISH R  07.0012,release_location_code
+3,,r4_snohomish,3F10308^^070012^R02,SKYKOMISH R  07.0012,release_location_code
+1,,r4_snohomish,3F10308^^070012^R03,SKYKOMISH R -SF (07),release_location_code
+3,,r4_snohomish,3F10308^^070012^S02,SKYKOMISH R  07.0012,stock_location_code
+1,,r4_snohomish,3F10308^^070881^R,SULTAN R     07.0881,release_location_code
+1,,r4_snohomish,3F10308^^070940^R,WALLACE R    07.0940,release_location_code
+1,,r4_snohomish,3F10308^^070943^H,WALLACE R HATCHERY,hatchery_location_code
+1,,r4_snohomish,3F10308^^070943^R,MAY CR       07.0943,release_location_code
+1,,r4_snohomish,3F10308^^070951^R,WALLACE R-NF 07.0951,release_location_code
+3,,r4_snohomish,3F10308^^070973^H,REITER PONDS,hatchery_location_code
+1,,r6_elwha,3F10806^^180272^H,,hatchery_location_code
+1,,r6_elwha,3F10806^^180272^R,,release_location_code
+1,,r6_elwha,3F10806^^180272^S,,stock_location_code
+1,,r5_beaver,3F42001^^250247^H,BEAVER CR HATCHERY,hatchery_location_code
+2,,r5_beaver,3F42001^^250247^H,BEAVER CR HATCHERY,hatchery_location_code
+3,,r5_beaver,3F42001^^250247^H,BEAVER CR HATCHERY,hatchery_location_code
+5,,r5_beaver,3F42001^^250247^H,BEAVER CR HATCHERY,hatchery_location_code
+3,,r5_cowlitz,3F42001^^260002^H01,COWLITZ TROUT HATCHERY,hatchery_location_code
+1,,r5_cowlitz,3F42001^^260002^H02,COWLITZ SALMON HATCHERY,hatchery_location_code
+2,,r5_cowlitz,3F42001^^260002^H02,COWLITZ SALMON HATCHERY,hatchery_location_code
+3,,r5_mossyrock,3F42001^^260002^H03,MOSSYROCK HATCHERY,hatchery_location_code
+1,,r5_cowlitz,3F42001^^260002^R,COWLITZ R    26.0002,release_location_code
+1,,r5_cowlitz,3F42001^^260002^R02,COWLITZ R -UPPER,release_location_code
+1,,r5_cowlitz,3F42001^^260002^R07,COWLITZ R @ MAYFIELD,release_location_code
+1,,r5_cowlitz,3F42001^^260002^S,COWLITZ R    26.0002,stock_location_code
+1,,r5_cowlitz,3F42001^^260002^S03,COWLITZ SAL HATCHERY,stock_location_code
+1,,r5_toutle,3F42001^^260323^H,NORTH TOUTLE HATCHERY,hatchery_location_code
+1,,r5_cowlitz,3F42001^^260668^R,CISPUS R    ,release_location_code
+1,,r5_kalama,3F42001^^270002^H,KALAMA FALLS HATCHERY,hatchery_location_code
+2,,r5_kalama,3F42001^^270002^H,KALAMA FALLS HATCHERY,hatchery_location_code
+3,,r5_kalama,3F42001^^270002^H,KALAMA FALLS HATCHERY,hatchery_location_code
+1,,r5_fallert,3F42001^^270017^H,FALLERT CR HATCHERY,hatchery_location_code
+3,,r5_fallert,3F42001^^270017^H,FALLERT CR HATCHERY,hatchery_location_code
+1,,r5_lewis,3F42001^^270168^H,LEWIS RIVER HATCHERY,hatchery_location_code
+3,,r5_lewis,3F42001^^270168^H02,MERWIN HATCHERY,hatchery_location_code
+1,,r5_lewis,3F42001^^270168^R,LEWIS R      27.0168,release_location_code
+1,,r5_lewis,3F42001^^270168^R01,LEWIS R -NF  27.0168,release_location_code
+1,,r5_lewis,3F42001^^270168^R02,LK MERWIN     (27),release_location_code
+1,,r5_lewis,3F42001^^270168^S,LEWIS R      27.0168,stock_location_code
+1,,r5_lewis,3F42001^^270168^S04,LEWIS RIVER HATCHERY,stock_location_code
+1,,r5_lewis,3F42001^^270173^R,LEWIS R -EF  27.0173,release_location_code
+1,,r5_lewis,3F42001^^270327^R,JOHNSON CR   27.0327,release_location_code
+1,,r5_lewis,3F42001^^270339^R,CEDAR CR     27.0339,release_location_code
+1,,r5_lewis,3F42001^^270430^H,SPEELYAI HATCHERY,hatchery_location_code
+2,,r5_lewis,3F42001^^270430^H,SPEELYAI HATCHERY,hatchery_location_code
+3,,r5_vancouver,3F42001^^280001^H01,VANCOUVER HATCHERY,hatchery_location_code
+5,,r5_vancouver,3F42001^^280001^H01,VANCOUVER HATCHERY,hatchery_location_code
+1,,r5_washougal,3F42001^^280159^H,WASHOUGAL HATCHERY,hatchery_location_code
+2,,r5_washougal,3F42001^^280159^H,WASHOUGAL HATCHERY,hatchery_location_code
+5,,r5_washougal,3F42001^^280159^H,WASHOUGAL HATCHERY,hatchery_location_code
+1,,r5_lewis,3F42001^^280159^R,WASHOUGAL R  28.0159,release_location_code
+1,1,r5_klickitat,3F42001^^300002^H,KLICKITAT HATCHERY (YKFP),hatchery_location_code
+2,,r5_klickitat,3F42001^^300002^H,KLICKITAT HATCHERY (YKFP),hatchery_location_code
+1,1,r5_klickitat,3F42001^^300002^H01,KLICKITAT HATCHERY,hatchery_location_code
+2,,r5_klickitat,3F42001^^300002^H01,KLICKITAT HATCHERY,hatchery_location_code
+1,,r5_cowlitz,3F551^26^NS69KZ^R01,SWOFFORD PD (LEWI),release_location_code
+1,3,r5_bonneville,5F33201^^H1^^^^^21,BONNEVILLE HATCHERY,hatchery_location_code
+2,,r5_bonneville,5F33201^^H1^^^^^21,BONNEVILLE HATCHERY,hatchery_location_code

@@ -1,0 +1,9 @@
+---
+title: "My Dashboard"
+format: dashboard
+css: styles.css
+---
+
+.card-title, .card-header {
+  font-weight: bold !important;
+}
