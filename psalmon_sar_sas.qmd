@@ -226,6 +226,20 @@ sar_df_fates %>% select(-sar) %>%
 #| tbl-cap: 
 #|   - "Recovery locations associated with a 'hatchery' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
 
+# Plot.rectY(data, 
+#   Plot.stackY(
+#     Plot.binX( 
+#       {y: "count"}, 
+#       {x: "body_mass_g", fill: "species", thresholds: 20})
+#     )
+#   ).plot({
+#     facet: {
+#       data,
+#       x: "sex"
+#     },
+#     marks: [Plot.frame()]
+#   })
+
 ### Table showing release and return locations after data filtering
 hatch_recover      <-unique(filter(sar_df_fates, fate=="hatchery")$recovery_location_code)
 hatch_recover_name <-list()
