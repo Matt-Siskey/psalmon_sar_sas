@@ -10,6 +10,7 @@ pull_RMIS <-function(){
   for(h in 1:length(hatcheries)){
     rel_h[[h]] <-rmisr::get_release(token = token,
                                     species = params$sp,
+                                    run = params$run,
                                     hatchery_location_code = hatcheries[h])
   }
   names(rel_h) <-hatcheries
@@ -17,7 +18,7 @@ pull_RMIS <-function(){
   
   
   ### Assign release stage based on length-at-smolt and length-weight relationship
-  len_wt_temp <-rel_df %>% drop_na(avg_length) 
+  len_wt_temp <-rel_df %>% drop_na(avg_length) %>% filter()
   len_wt_df   <-len_wt_temp %>% filter(avg_length >= (quantile(avg_length, 0.25) - 1.5 * IQR(avg_length)) &
                                        avg_length <= (quantile(avg_length, 0.75) + 1.5 * IQR(avg_length)))
   len_wt_df   <-len_wt_df[order(len_wt_df$avg_length), ]

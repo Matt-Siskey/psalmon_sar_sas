@@ -14,7 +14,6 @@ params:
   smolt: true
   sp: "1"
   run: "1"
-  system: "r5_cowlitz"
   yr_trim: true
   yr_start:  2010
   yr_end: 2020
@@ -73,8 +72,8 @@ fishery_id <-read.csv(paste0(proj_drive,"data/fishery.csv",sep=""))
 fishery_id$fishery <-as.character(fishery_id$fishery)
 ruleset <-read.csv(paste0(proj_drive,"data/hatchery_program_ruleset.csv",sep=""), fileEncoding = "latin1", check.names=F)
 
-param_tab <-data.frame(params=c("system","species","run","start_yr","end_yr"),
-                       value=c(params$system,params$sp,params$run,params$yr_start,params$yr_end))
+param_tab <-data.frame(params=c("species","run","start_yr","end_yr"),
+                       value=c(params$sp,params$run,params$yr_start,params$yr_end))
 
 param_tab %>%
   kbl(format="html", row.names = NA)%>%
@@ -89,7 +88,7 @@ param_tab %>%
 #|   - "Release location information for filtered data used in the following smolt-adult return calculations."
 
 ruleset %>%
-  filter(., system==params$system) %>%
+  filter(., region==c(4,5,6)) %>%
   # rename("month" = first_release_date_month) %>%
   # arrange(brood_year, month,avg_weight) %>%
   # select(-brood_year)%>%
@@ -103,7 +102,10 @@ ruleset %>%
 #| tbl-cap: 
 #|   - "Release location information for filtered data used in the following smolt-adult return calculations."
 
-hatcheries <-unique(filter(ruleset, system == params$system & loc_col == "hatchery_location_code")$loc_code)
+hatcheries <-unique(filter(ruleset, region == c(4,5,6) & loc_col == "hatchery_location_code")$loc_code)
+hatcheries_r4 <-unique(filter(ruleset, region == 4 & loc_col == "hatchery_location_code")$loc_code)
+hatcheries_r5 <-unique(filter(ruleset, region == 5 & loc_col == "hatchery_location_code")$loc_code)
+hatcheries_r6 <-unique(filter(ruleset, region == 6 & loc_col == "hatchery_location_code")$loc_code)
 
 pull_RMIS_dfs <-pull_RMIS()
 len_wt_df     <-pull_RMIS_dfs$len_wt_df
@@ -113,8 +115,9 @@ loc_all       <-pull_RMIS_dfs$loc_all
 
 ### Table showing release and return locations after data filtering
 ruleset %>%
-  filter(., system==params$system) %>%
-  filter(., loc_code %in% unique(sar_df$release_location_code)) %>%  
+  # filter(., system==params$system) %>%
+  filter(., region==c(4,5,6)) %>%
+  # filter(., loc_code %in% unique(sar_df$release_location_code)) %>%  
   # rename("month" = first_release_date_month) %>%
   # arrange(brood_year, month,avg_weight) %>%
   # select(-brood_year)%>%
@@ -193,7 +196,7 @@ fate_fishery  <-c(troll, net_seine, aboriginal, sport, 56, test_fishery, high_se
 fate_hatchery <-c(50,52,53,57)
 fate_spawngr  <-54
 
-sar_df_fates <-left_join(sar_df, fishery_id, by = "fishery") %>%
+sar_df_fates <-left_join(filter(sar_df, hatchery_location_code %in% filter(ruleset, region==5)$loc_code), fishery_id, by = "fishery") %>%
                select(-sar) %>%
                aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code + 
                                                                        first_release_date_month + jday + avg_weight + release_stage_assigned + 
@@ -225,20 +228,6 @@ sar_df_fates %>% select(-sar) %>%
 #| label: tbl-data2
 #| tbl-cap: 
 #|   - "Recovery locations associated with a 'hatchery' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
-
-# Plot.rectY(data, 
-#   Plot.stackY(
-#     Plot.binX( 
-#       {y: "count"}, 
-#       {x: "body_mass_g", fill: "species", thresholds: 20})
-#     )
-#   ).plot({
-#     facet: {
-#       data,
-#       x: "sex"
-#     },
-#     marks: [Plot.frame()]
-#   })
 
 ### Table showing release and return locations after data filtering
 hatch_recover      <-unique(filter(sar_df_fates, fate=="hatchery")$recovery_location_code)
@@ -339,7 +328,7 @@ fishery_recover_df %>%
 #|   - "Smolt-adult return calcualted from the raw release and return data across brood years and julian days."
 
 ### hatchery sar
-hatch_plots <-fate_plots(fate_type = "hatchery", rec_type = hatcheries)
+hatch_plots <-fate_plots(fate_type = "hatchery", rec_type = hatch_recover)
 
 print(hatch_plots$rel_size) # sar by brood year & mean wt
 print(hatch_plots$rel_month) # sar by brood year & release month
