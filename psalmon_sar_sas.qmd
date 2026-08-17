@@ -14,7 +14,7 @@ params:
   smolt: true
   sp: "1"
   run: "1"
-  system: "r5_cowlitz"
+  system: "r5_lewis"
   yr_trim: true
   yr_start:  2010
   yr_end: 2020
@@ -48,6 +48,8 @@ The CWT tag codes retained in the release data after filtering are then used to 
 ##############################
 ### Clear workspace & load libraries
 # rm(list=ls())
+
+### RMIS coding
 # Chinook=1; Coho=2; Steelhead=3; sockeye=4; chum=5; pink=6
 # spring == 1; summer == 2; fall == 3; winter == 4
 # First-time rmisr install
