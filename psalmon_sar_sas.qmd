@@ -14,7 +14,7 @@ params:
   smolt: true
   sp: "1"
   run: "1"
-  system: "r5_lewis"
+  system: "r5_cowlitz"
   yr_trim: true
   yr_start:  2010
   yr_end: 2020
@@ -88,10 +88,12 @@ param_tab %>%
 ```{r}
 #| label: tbl-data0
 #| tbl-cap: 
-#|   - "Release location information for filtered data used in the following smolt-adult return calculations."
+#|   - "Hatchery, stock, and release location information for the query parameters set by the user."
 
 ruleset %>%
   filter(., system==params$system) %>%
+  filter(., species==params$sp) %>%
+  filter(., run==params$run) %>%
   # rename("month" = first_release_date_month) %>%
   # arrange(brood_year, month,avg_weight) %>%
   # select(-brood_year)%>%
@@ -103,7 +105,7 @@ ruleset %>%
 ```{r, message=FALSE, warning=FALSE}
 #| label: tbl-data1
 #| tbl-cap: 
-#|   - "Release location information for filtered data used in the following smolt-adult return calculations."
+#|   - "Release location information for pulled RMIS data after filtering for ruleset locations to be used in the following smolt-adult return calculations."
 
 hatcheries <-unique(filter(ruleset, system == params$system & loc_col == "hatchery_location_code")$loc_code)
 
@@ -132,7 +134,7 @@ ruleset %>%
 #| layout-ncol: 1
 #| label: fig-data
 #| fig-cap: 
-#|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). The red-dashed vertical line shows the species-specific size used for the weight-at-smolt conversion. Facets are split by run."
+#|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). The red-dashed vertical line shows the species-specific size used for the weight-at-smolt conversion. Facets are split by run, and outliers are removed before model fitting and prediction."
 
 ####################################
 ### Length-weight relationship for determining stage
@@ -227,20 +229,6 @@ sar_df_fates %>% select(-sar) %>%
 #| label: tbl-data2
 #| tbl-cap: 
 #|   - "Recovery locations associated with a 'hatchery' fate in the filtered data, and the number of estimated recoveries (number_cwt_estimated) reported for each recovery location."
-
-# Plot.rectY(data, 
-#   Plot.stackY(
-#     Plot.binX( 
-#       {y: "count"}, 
-#       {x: "body_mass_g", fill: "species", thresholds: 20})
-#     )
-#   ).plot({
-#     facet: {
-#       data,
-#       x: "sex"
-#     },
-#     marks: [Plot.frame()]
-#   })
 
 ### Table showing release and return locations after data filtering
 hatch_recover      <-unique(filter(sar_df_fates, fate=="hatchery")$recovery_location_code)
@@ -634,7 +622,7 @@ sas_df$sas <-sas_df$number_cwt_estimated/sas_df$event_released
 ggplot(data=sas_df, aes(x=as.factor(brood_year), y=sas*100, group=1))+
     geom_line(fill="black", size=1)+
     geom_point(pch=21,size=2)+
-    geom_hline(yintercept=sas_threshold, color="red",linetype=2, size=1.2)+
+    # geom_hline(yintercept=sas_threshold, color="red",linetype=2, size=1.2)+
     scale_y_continuous(limits=c(0,5), breaks=c(seq(0,5,1))) +
     # facet_wrap(.~run, ncol=1)+
     labs(x = "Brood Year", y = "SAS (%)", title = paste0("Smolt-adult-survival: system = ",params$system, ", run = ", params$run, ", species = ", params$sp))+

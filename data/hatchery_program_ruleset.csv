@@ -377,3 +377,18 @@ species,run,loc_code,loc_col,name,region,system
 3,4,3F10412^^160001^H,hatchery_location_code,NF SKOKOMISH HATCHERY,6,r6_skokomish
 1,3,3F10511^^100432^H,hatchery_location_code,WILKESON CREEK HATCHERY,6,r6_wilkeson
 5,3,3F10511^^100029^H01,hatchery_location_code,DIRU CREEK HATCHERY,6,r6_diru
+1,1,3F42001^^260002^R,release_location_code,COWLITZ R    26.0002,5,r5_cowlitz
+1,1,3F42001^^260002^R02,release_location_code,COWLITZ R -UPPER,5,r5_cowlitz
+1,1,3F42001^^260002^R07,release_location_code,COWLITZ R @ MAYFIELD,5,r5_cowlitz
+1,1,3F42001^^260002^S,stock_location_code,COWLITZ R    26.0002,5,r5_cowlitz
+1,1,3F42001^^260002^S03,stock_location_code,COWLITZ SAL HATCHERY,5,r5_cowlitz
+1,,3F42001^^270168^R,release_location_code,LEWIS R      27.0168,5,r5_lewis
+1,,3F42001^^270168^R01,release_location_code,LEWIS R -NF  27.0168,5,r5_lewis
+1,,3F42001^^270168^R02,release_location_code,LK MERWIN     (27),5,r5_lewis
+1,,3F42001^^270168^S,stock_location_code,LEWIS R      27.0168,5,r5_lewis
+1,,3F42001^^270168^S04,stock_location_code,LEWIS RIVER HATCHERY,5,r5_lewis
+1,,3F42001^^270173^R,release_location_code,LEWIS R -EF  27.0173,5,r5_lewis
+1,,3F42001^^270327^R,release_location_code,JOHNSON CR   27.0327,5,r5_lewis
+1,,3F42001^^270339^R,release_location_code,CEDAR CR     27.0339,5,r5_lewis
+1,,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
+2,,3F42001^^270430^H,hatchery_location_code,SPEELYAI HATCHERY,5,r5_lewis
