@@ -10,6 +10,7 @@ pull_RMIS <-function(){
   for(h in 1:length(hatcheries)){
     rel_h[[h]] <-rmisr::get_release(token = token,
                                     species = params$sp,
+                                    run = params$run,
                                     hatchery_location_code = hatcheries[h])
   }
   names(rel_h) <-hatcheries
@@ -84,7 +85,7 @@ pull_RMIS <-function(){
   
   rec_cwt_df$age <-rec_cwt_df$recovery_date_year-rec_cwt_df$brood_year
   
-  rec_join <-rec_cwt_df %>% filter(., age >= 3) %>%
+  rec_join <-rec_cwt_df %>% filter(., age >= params$adult_age) %>%
     aggregate(number_cwt_estimated ~ species + recovery_location_code + fishery + tag_code, data=., FUN=sum)
 
   ########################## Join Release & Return Data for SAR ##########################
