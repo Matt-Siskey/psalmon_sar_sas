@@ -86,14 +86,14 @@ pull_RMIS <-function(){
   rec_cwt_df$age <-rec_cwt_df$recovery_date_year-rec_cwt_df$brood_year
   
   rec_join <-rec_cwt_df %>% filter(., age >= params$adult_age) %>%
-    aggregate(number_cwt_estimated ~ species + recovery_location_code + fishery + tag_code, data=., FUN=sum)
+    aggregate(number_cwt_estimated ~ species + recovery_location_code + fishery + gear + tag_code, data=., FUN=sum)
 
   ########################## Join Release & Return Data for SAR ##########################
   # even if release_location_code is the same across recoveries, event_released gets multi-counted if you dont distinguish separate SAR calculations for tag_code
-  sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated","recovery_location_code","fishery")], by = "tag_code") %>%
+  sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated","recovery_location_code","fishery","gear")], by = "tag_code") %>%
     aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code +
                 first_release_date_month + jday + avg_weight + release_stage_assigned + tag_code + 
-                recovery_location_code + fishery,
+                recovery_location_code + fishery + gear,
               data=., FUN=sum)
   
   sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released

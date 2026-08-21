@@ -224,13 +224,14 @@ sar_df_fates <-left_join(sar_df, fishery_id, by = "fishery") %>%
                select(-sar) %>%
                aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code + 
                                                                        first_release_date_month + jday + avg_weight + release_stage_assigned + 
-                                                                       recovery_location_code + fishery + fishery_name + fishery_short_name + tag_code, 
+                                                                       recovery_location_code + gear + fishery + fishery_name + fishery_short_name + tag_code, 
                          data=., FUN=sum) %>%
                mutate(.,fate = case_when(fishery %in% fate_fishery ~ "fishery",
                                          fishery %in% fate_hatchery ~ "hatchery",
                                          fishery %in% fate_spawngr ~ "spawngr"))
 
 sar_df_fates$sar <-sar_df_fates$number_cwt_estimated/sar_df_fates$event_released
+
 
 ### top-level fate returns
 # aggregated fate tiles
@@ -328,17 +329,53 @@ fishery_recover <-unique(filter(sar_df_fates, fate=="fishery")$recovery_location
 fishery_recover_name <-list()
 
 for(i in 1:length(fishery_recover)){
-  fishery_recover_name[[i]] <-filter(loc_all, location_code == fishery_recover[i])[1,c("location_code","name","latitude","longitude","psc_region")]
-  }
+  fishery_recover_name[[i]] <-filter(loc_all, location_code == fishery_recover[i])[1,c("location_code","name","latitude","longitude","psc_region","psc_basin")]
+}
 
-fishery_recover_sum <-aggregate(number_cwt_estimated~recovery_location_code, data=filter(sar_df_fates, fate=="fishery"),FUN=sum)
+fishery_recover_sum <-aggregate(number_cwt_estimated~recovery_location_code+fishery+fishery_short_name, data=filter(sar_df_fates, fate=="fishery"),FUN=sum)
 fishery_recover_df <-fishery_recover_name %>% map_df(., ~as.data.frame(.)) %>%
                                           rename("recovery_location_code" = location_code) %>%
                                           left_join(., fishery_recover_sum, by="recovery_location_code") %>%
                                           arrange(desc(number_cwt_estimated))
 
+fishery_recover_df$water_type = substr(fishery_recover_df$recovery_location_code, 2, 2)
+fishery_recover_df$state <-str_extract(fishery_recover_df$recovery_location_code, "^.")
+
+fishery_recover_df <-fishery_recover_df %>%
+  mutate(state_name = case_when(
+    state == "1" ~ "AK",
+    state == "2" ~ "CAN",
+    state == "3" ~ "WA",
+    state == "4" ~ "ID",
+    state == "5" ~ "OR",
+    state == "6" ~ "CA",
+    state == "7" ~ "Ocean"
+  )
+)
+
+fishery_recover_df$stem_trib <-substr(fishery_recover_df$name,1,5)
+if(substr(params$system,1,2)=="r5"){
+  fishery_recover_df[which(fishery_recover_df$stem_trib!="COL R"),"stem_trib"] <-fishery_recover_df[which(fishery_recover_df$stem_trib!="COL R"),"name"]
+}
+
+# commercial <-c(10_gear00,23_gear38,25)
+commercial <-c(10,23,25)
+# treaty <-c(15,17_gear40,21_gear17,22_gear17,23_gear17,23_gear29,23_gear51,24_gear17,24_gear29,55,56,62_gear29)
+treaty <-c(15,17,21,22,23,24,55,56,62)
+
+
+fishery_recover_df <-fishery_recover_df %>%
+  mutate(fishery_type = case_when(
+    fishery %in% sport ~ "Sport",
+    fishery %in% commercial ~ "Commercial",
+    fishery %in% treaty ~ "Treaty",
+    fishery %nin% c(sport, commercial, treaty) ~ "Other"
+  )
+)
+
+
 fishery_recover_df %>%
-  # scroll_box(height = "400px") %>%
+  scroll_box(height = "400px") %>%
   kbl(format="html", row.names = NA)%>%
   kable_classic(position="left", html_font = "Cambria")%>%
   kable_styling(full_width = F, bootstrap_options = c("condensed")) #%>% pack_rows(index = table(sar_df$brood_year))
@@ -393,18 +430,18 @@ print(spawngr_plots$rel_jday) # sar by release timing (jday)
 ```{r, message=FALSE, warning=FALSE}
 #| label: fig-dat3
 #| fig-cap: 
-#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and mean weight release groups."
-#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release month."
-#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and release sites."
-#|   - "Smolt-adult return calcualted from the raw release and return data across brood years and julian days."
+#|   - "Smolt-adult return calcualted for each fishery."
+#|   - "Smolt-adult return calcualted by state landed"
+#|   - "Smolt-adult return calcualted by fishery type (freshwater or marine)."
+#|   - "Smolt-adult return calcualted for freshwater fisheries."
 
 ### spawngr sar
 fishery_plots <-fate_plots(fate_type = "fishery", rec_type = fishery_recover)
 
-print(fishery_plots$rel_size) # sar by brood year & mean wt
-print(fishery_plots$rel_month) # sar by brood year & release month
-print(fishery_plots$rel_loc) # sar by release location
-print(fishery_plots$rel_jday) # sar by release timing (jday)
+print(fishery_plots$name_fishery) # sar by brood year & mean wt
+print(fishery_plots$state_fishery) # sar by brood year & release month
+print(fishery_plots$water_type_fishery) # sar by release location
+print(fishery_plots$stem_trib_fishery) # sar by release timing (jday)
 ```
 
 ### Tables {.tabset}
