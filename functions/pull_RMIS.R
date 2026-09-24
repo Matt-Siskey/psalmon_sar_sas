@@ -7,15 +7,26 @@ pull_RMIS <-function(){
   # [RELEASES] Pull in RMIS release data
   rel_h      <-list()
   
-  for(h in 1:length(hatcheries)){
-    rel_h[[h]] <-rmisr::get_release(token = token,
-                                    species = params$sp,
-                                    run = params$run,
-                                    hatchery_location_code = hatcheries[h])
+  if(params$run!="NA"){
+    for(h in 1:length(hatcheries)){
+      rel_h[[h]] <-rmisr::get_release(token = token,
+                                      species = params$sp,
+                                      run = params$run,
+                                      hatchery_location_code = hatcheries[h])
+    }
+    names(rel_h) <-hatcheries
+    rel_df       <-map_df(rel_h, ~as.data.frame(.))
   }
-  names(rel_h) <-hatcheries
-  rel_df       <-map_df(rel_h, ~as.data.frame(.))
-  
+  if(params$run=="NA"){
+    for(h in 1:length(hatcheries)){
+      rel_h[[h]] <-rmisr::get_release(token = token,
+                                      species = params$sp,
+                                      hatchery_location_code = hatcheries[h])
+    }
+    names(rel_h) <-hatcheries
+    rel_df       <-map_df(rel_h, ~as.data.frame(.))
+    rel_df       <-rel_df[is.na(rel_df$run),]
+  }
   
   ### Assign release stage based on length-at-smolt and length-weight relationship
   len_wt_temp <-rel_df %>% drop_na(avg_length) 
@@ -51,15 +62,27 @@ pull_RMIS <-function(){
                                    rel_dat$cwt_2nd_mark_count
   rel_dat$release_stage_assigned <-as.factor(rel_dat$release_stage_assigned)
   
-  rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
-    filter(run==params$run) %>%
-    mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
-    mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
-    mutate(jday = yday(first_release_date)) %>%
-    aggregate(event_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
-                first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
-              data=., FUN=sum) %>%
-    rename(tag_code = tag_code_or_release_id)
+  if(params$run!="NA"){
+    rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
+      filter(run==params$run) %>%
+      mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
+      mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
+      mutate(jday = yday(first_release_date)) %>%
+      aggregate(event_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
+                  first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
+                data=., FUN=sum) %>%
+      rename(tag_code = tag_code_or_release_id)
+  }
+  if(params$run=="NA"){
+    rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
+      mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
+      mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
+      mutate(jday = yday(first_release_date)) %>%
+      aggregate(event_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
+                  first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
+                data=., FUN=sum) %>%
+      rename(tag_code = tag_code_or_release_id)
+  } 
   
   ### TRUE needed to run .qmd; "true" needed for quarto_render
   if(params$yr_trim==TRUE){rel_agg <-filter(rel_agg, brood_year %in% seq(params$yr_start,params$yr_end,1))}
@@ -97,6 +120,10 @@ pull_RMIS <-function(){
               data=., FUN=sum)
   
   sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
-  return(list(len_wt_df = len_wt_df, sar_df = sar_df, smolt_mm = smolt_mm, loc_all = loc_all))
+  
+  report_samp_rec <-table(rec_cwt_df$sampling_agency, rec_cwt_df$reporting_agency)
+  report_rel_rel <-table(rel_df$release_agency, rel_df$reporting_agency)
+  
+  return(list(len_wt_df = len_wt_df, sar_df = sar_df, smolt_mm = smolt_mm, loc_all = loc_all, report_samp_rec = report_samp_rec, report_rel_rel = report_rel_rel))
   print("got RMIS data")
 }
