@@ -4,29 +4,33 @@ fate_plots <-function(fate_type, rec_type){
     # sar by brood year & mean wt
     rel_size <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
                  geom_boxplot(outlier.shape = NA)+
-                 geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+                 geom_jitter(pch=21,size=2,width = 0.1,height=0, alpha=0.6)+
+                 # geom_point(pch=21,size=2, alpha=0.6)+
                  labs(x = "Brood Year", y = "SAR (%)", fill = "Mean Weight (g)")+
                  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
     
     # sar by brood year & release month
     rel_month <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
                   geom_boxplot(outlier.shape = NA)+
-                  geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+                  geom_jitter(pch=21,size=2,width = 0.1,height=0, alpha=0.6)+
+                  # geom_point(pch=21,size=2, alpha=0.6)+
                   labs(x = "Brood Year", y = "SAR (%)", fill = "Release Month")+
                   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     
     # sar by release location
     rel_loc <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
                 geom_boxplot(outlier.shape = NA)+
-                geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
+                geom_jitter(pch=21,size=2,width = 0.1,height=0, alpha=0.6)+
+                # geom_point(pch=21,size=2, alpha=0.6)+
                 labs(x = "Brood Year", y = "SAR (%)", fill = "Release Site")+
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     
     # sar by release timing (jday)
-    rel_jday <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(jday),y=sar*100))+
+    rel_jday <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(jday),y=sar*100, fill=as.factor(brood_year)))+
                  geom_boxplot(outlier.shape = NA)+
-                 geom_jitter(pch=21,size=2,width = 0.2, alpha=0.75,aes(group=as.factor(brood_year),fill=as.factor(brood_year)))+
-                 labs(x = "Julian Day", y = "SAR (%)", fill = "Release Site")+
+                 geom_jitter(pch=21,size=2,width = 0.1,height=0,alpha=0.75,aes(group=as.factor(brood_year),fill=as.factor(brood_year)))+
+                 # geom_point(pch=21,size=2, alpha=0.6)+
+                 labs(x = "Julian Day", y = "SAR (%)", fill = "Brood Year")+
                  theme(axis.text.x = element_text(angle = 45, hjust = 1))+ # Angle x-axis labels for readability
                  theme(legend.position = "right")
     return(list(rel_size = rel_size, rel_month = rel_month, rel_loc = rel_loc, rel_jday = rel_jday))
@@ -59,22 +63,22 @@ fate_plots <-function(fate_type, rec_type){
     #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     # 
     ### mainstem vs. trib
-    stem_trib_fishery <-ggplot(data=filter(fishery_recover_df, water_type=="F"), aes(y=as.factor(stem_trib),x=log(number_cwt_estimated), fill=as.factor(stem_trib)))+
+    stem_trib_fishery <-ggplot(data=filter(fishery_recover_df, water_type=="F"), aes(y=as.factor(stem_trib),x=log(recoveries), fill=as.factor(fishery_type)))+
       geom_boxplot(outlier.shape = NA)+
       geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
       scale_x_log10() +
-      labs(y = "Fresh Fishery", x = "log(number_cwt_estimated)", fill = "Fresh Fishery")+
-      theme(legend.position = "none") +
+      labs(y = "Fresh Fishery", x = "log(recoveries)", fill = "Fresh Fishery")+
+      theme(legend.position = "top") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
 
     ### marine location parse
-    marine_fishery <-ggplot(data=filter(fishery_recover_df, water_type=="M"), aes(y=as.factor(fishery_short_name),x=log(number_cwt_estimated), fill=as.factor(fishery_type)))+
+    marine_fishery <-ggplot(data=filter(fishery_recover_df, water_type=="M"), aes(y=as.factor(fishery_short_name),x=log(recoveries), fill=as.factor(fishery_type)))+
       geom_boxplot(outlier.shape = NA)+
       geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
-      labs(y = "Marine Fishery", x = "log(number_cwt_estimated)", fill = "Marine Fishery")+
+      labs(y = "Marine Fishery", x = "log(recoveries)", fill = "Marine Fishery")+
       # facet_grid(.~state)+
       scale_x_log10()+
-      theme(legend.position = "none") +
+      theme(legend.position = "top") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     
     ##### SAR figs
@@ -91,11 +95,11 @@ fate_plots <-function(fate_type, rec_type){
                                 fishery %in% fate_hatchery ~ "hatchery",
                                 fishery %in% fate_spawngr ~ "spawngr"))%>%
       filter(fate=="fishery")%>%
-      aggregate(number_cwt_estimated ~ species + brood_year + release_location_code + hatchery_location_code + 
-                  first_release_date_month + jday + avg_weight + fishery_type + tag_code + event_released, 
+      aggregate(recoveries ~ species + brood_year + release_location_code + hatchery_location_code + 
+                  first_release_date_month + jday + avg_weight + fishery_type + tag_code + releases, 
                 data=., FUN=sum)
     
-    sar_df_fleet$sar <-sar_df_fleet$number_cwt_estimated/sar_df_fleet$event_released
+    sar_df_fleet$sar <-sar_df_fleet$recoveries/sar_df_fleet$releases
     
       
     fleet_fishery <-ggplot(data=sar_df_fleet, aes(x=as.factor(fishery_type),y=sar*100, fill=as.factor(fishery_type)))+
@@ -125,22 +129,19 @@ fate_plots <-function(fate_type, rec_type){
         state == "6" ~ "CA",
         state == "7" ~ "Ocean")) %>%
       filter(fate=="fishery") %>%
-      aggregate(number_cwt_estimated ~ species + brood_year + release_location_code + hatchery_location_code + 
-                  first_release_date_month + jday + avg_weight + state_name + tag_code + event_released, 
+      aggregate(recoveries ~ species + brood_year + release_location_code + hatchery_location_code + 
+                  first_release_date_month + jday + avg_weight + state_name + tag_code + releases, 
                 data=., FUN=sum)
     
-
-    sar_df_state$sar <-sar_df_state$number_cwt_estimated/sar_df_state$event_released
+    sar_df_state$sar <-sar_df_state$recoveries/sar_df_state$releases
     
-    state_fishery <-ggplot(data=sar_df_state, aes(x=as.factor(state_name),y=sar*100, fill=as.factor(state_name)))+
+    state_fishery <-ggplot(data=sar_df_state, aes(x=as.factor(state_name),y=sar*100, fill=as.factor(avg_weight)))+
       geom_boxplot(outlier.shape = NA)+
       geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
       labs(x = "State", y = "SAR (%)", fill = "State")+
-      theme(legend.position="none")+
+      theme(legend.position="top")+
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
 
-    
-    
     
     return(list(fleet_fishery = fleet_fishery, state_fishery = state_fishery, stem_trib_fishery = stem_trib_fishery, marine_fishery = marine_fishery))
   }

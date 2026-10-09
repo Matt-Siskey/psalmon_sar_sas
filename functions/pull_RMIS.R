@@ -11,7 +11,7 @@ pull_RMIS <-function(){
     for(h in 1:length(hatcheries)){
       rel_h[[h]] <-rmisr::get_release(token = token,
                                       species = params$sp,
-                                      run = params$run,
+                                      # run = params$run,
                                       hatchery_location_code = hatcheries[h])
     }
     names(rel_h) <-hatcheries
@@ -58,17 +58,57 @@ pull_RMIS <-function(){
   
   cols_to_fix <- c("cwt_1st_mark_count", "cwt_2nd_mark_count", "non_cwt_1st_mark_count", "non_cwt_2nd_mark_count")
   rel_dat[cols_to_fix][is.na(rel_dat[cols_to_fix])] <- 0
-  rel_dat$event_released         <-rel_dat$cwt_1st_mark_count +
+  rel_dat$cwt_released         <-rel_dat$cwt_1st_mark_count +
                                    rel_dat$cwt_2nd_mark_count
   rel_dat$release_stage_assigned <-as.factor(rel_dat$release_stage_assigned)
+  rel_dat$non_cwt_released <-rel_dat$non_cwt_1st_mark_count +
+                             rel_dat$non_cwt_2nd_mark_count    
+  rel_dat$total_released <-rel_dat$cwt_1st_mark_count +
+                           rel_dat$cwt_2nd_mark_count +
+                           rel_dat$non_cwt_1st_mark_count +
+                           rel_dat$non_cwt_2nd_mark_count    
   
+  ### Calculate CWT tag rate
+  rel_dat_total <-rel_dat %>%  
+    filter(brood_year >= params$yr_start & brood_year <=params$yr_end) %>%
+    mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
+    mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
+    mutate(jday = yday(first_release_date)) %>%
+    aggregate(cbind(cwt_released,non_cwt_released,total_released) ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
+                first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
+              data=., FUN=sum) %>%
+    rename(tag_code = tag_code_or_release_id)
+  
+  rel_dat_CWT <-rel_dat_total %>%
+    select(species,brood_year,hatchery_location_code,first_release_date_month,tag_code,cwt_released) %>%
+    filter(!grepl("!",tag_code))
+  
+  tag_rate <-rel_dat_total %>%
+    filter(release_stage_assigned == "smolt") %>%
+    aggregate(cbind(cwt_released)~species + brood_year + hatchery_location_code + first_release_date_month + tag_code,
+              data=., FUN=sum) %>%
+    filter(!grepl("!",tag_code))
+  
+  untag_rate <-rel_dat_total %>%
+    filter(release_stage_assigned == "smolt") %>%
+    aggregate(cbind(total_released)~species + brood_year + hatchery_location_code + first_release_date_month,
+              data=., FUN=sum)
+
+  tag_untag       <-tag_rate %>% left_join(., untag_rate, by=c("species","brood_year","hatchery_location_code","first_release_date_month"))
+  
+    
+  tag_untag$tag_rate <-tag_untag$cwt_released/tag_untag$total_released
+  tag_rate_df       <-tag_untag %>% left_join(., rel_dat_CWT, by=c("species","brood_year","hatchery_location_code","first_release_date_month", "tag_code", "cwt_released"))
+  
+  
+  ### Filter out untagged fish, create jday, round avg_weight, and aggregate based on specified groupings
   if(params$run!="NA"){
     rel_agg <-rel_dat %>% filter(!grepl("!",tag_code_or_release_id)) %>%
       filter(run==params$run) %>%
       mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
       mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
       mutate(jday = yday(first_release_date)) %>%
-      aggregate(event_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
+      aggregate(cwt_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
                   first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
                 data=., FUN=sum) %>%
       rename(tag_code = tag_code_or_release_id)
@@ -78,7 +118,7 @@ pull_RMIS <-function(){
       mutate(avg_weight = ifelse(avg_weight < 5, round(avg_weight),round(avg_weight, digits = -1))) %>%
       mutate(first_release_date = make_date(first_release_date_year, first_release_date_month, first_release_date_day)) %>%
       mutate(jday = yday(first_release_date)) %>%
-      aggregate(event_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
+      aggregate(cwt_released ~ species + brood_year + release_location_code + hatchery_location_code + stock_location_code +
                   first_release_date_month + tag_code_or_release_id + jday + avg_weight + release_stage_assigned,
                 data=., FUN=sum) %>%
       rename(tag_code = tag_code_or_release_id)
@@ -109,21 +149,34 @@ pull_RMIS <-function(){
   rec_cwt_df$age <-rec_cwt_df$recovery_date_year-rec_cwt_df$brood_year
   
   rec_join <-rec_cwt_df %>% filter(., age >= params$adult_age) %>%
-    aggregate(number_cwt_estimated ~ species + recovery_location_code + fishery + gear + tag_code, data=., FUN=sum)
+    filter(., !is.na(length)) %>%
+    aggregate(number_cwt_estimated ~ species + recovery_location_code + fishery + gear + tag_code + length, data=., FUN=sum)
 
-  ########################## Join Release & Return Data for SAR ##########################
-  # even if release_location_code is the same across recoveries, event_released gets multi-counted if you dont distinguish separate SAR calculations for tag_code
-  sar_df <-left_join(rel_agg, rec_join[,c("tag_code","number_cwt_estimated","recovery_location_code","fishery","gear")], by = "tag_code") %>%
-    aggregate(cbind(event_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code +
-                first_release_date_month + jday + avg_weight + release_stage_assigned + tag_code + 
-                recovery_location_code + fishery + gear,
-              data=., FUN=sum)
+
+  # ##############################
+  # # CatchSample (exp)
+  # cs <-get_catchsample(token=token,
+  #                      catch_year=2021,
+  #                      species=params$sp)
   
-  sar_df$sar <-sar_df$number_cwt_estimated/sar_df$event_released
+  
+  ########################## Join Release & Return Data for SAR ##########################
+  # even if release_location_code is the same across recoveries, cwt_released gets multi-counted if you dont distinguish separate SAR calculations for tag_code
+  sar_df_pull <-rel_agg %>%
+    left_join(., rec_join[,c("tag_code","number_cwt_estimated","recovery_location_code","fishery","gear","length")], by = "tag_code") %>%
+    aggregate(cbind(cwt_released, number_cwt_estimated) ~ species + brood_year + release_location_code + hatchery_location_code +
+                first_release_date_month + jday + avg_weight + release_stage_assigned + tag_code + 
+                recovery_location_code + fishery + gear + length,
+              data=., FUN=sum) %>%
+    left_join(., tag_rate_df[,c("tag_code", "tag_rate","total_released")], by="tag_code")
+  
+  sar_df_pull$sar_cwt             <-sar_df_pull$number_cwt_estimated/sar_df_pull$cwt_released
+  sar_df_pull$number_cwt_expanded <-sar_df_pull$number_cwt_estimated/sar_df_pull$tag_rate 
+  sar_df_pull$sar_total           <-sar_df_pull$number_cwt_expanded/sar_df_pull$total_released
   
   report_samp_rec <-table(rec_cwt_df$sampling_agency, rec_cwt_df$reporting_agency)
-  report_rel_rel <-table(rel_df$release_agency, rel_df$reporting_agency)
+  report_rel_rel  <-table(rel_df$release_agency, rel_df$reporting_agency)
   
-  return(list(len_wt_df = len_wt_df, sar_df = sar_df, smolt_mm = smolt_mm, loc_all = loc_all, report_samp_rec = report_samp_rec, report_rel_rel = report_rel_rel))
+  return(list(len_wt_df=len_wt_df, sar_df_pull=sar_df_pull, smolt_mm=smolt_mm, loc_all=loc_all, report_samp_rec=report_samp_rec, report_rel_rel=report_rel_rel, tag_rate_df=tag_rate_df))
   print("got RMIS data")
 }
