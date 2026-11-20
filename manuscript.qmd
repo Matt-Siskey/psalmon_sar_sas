@@ -1,0 +1,104 @@
+---
+title: "WDFW Hatchery Program Performance Evaluation: Lewis River Spring Chinook"
+author: 
+  - name: Matt Siskey
+    orcid: 0000-0002-7834-4749
+    corresponding: true
+    email: matthew.siskey@dfw.wa.gov
+    affiliations:
+      - Washington Department of Fish & Wildlife
+keywords:
+  - Pacific salmon
+  - smolt-adult-return
+  - coded-wire tags
+abstract: |
+  Hatchery rearing and release practices for spring-run Chinook salmon were investigated at Lewis River Hatchery from 2007-2018. Practices evaluated included release timing (month) and size (weight). This report summarizes the results of the release study, providing text, tables, and figures of coded-wire tag recoveries and calculated smolt-adult-return. ...
+plain-language-summary: |
+  Smolt-adult-return calculations for a release study on Lewis River spring Chinook ...
+key-points:
+  - A framework was developed to standardize smolt-adult metric calculations.
+  - Release timing and size had an effect on SAR.
+date: last-modified
+bibliography: references.bib
+number-sections: true
+lightbox: true
+project:
+  type: manuscript
+execute:
+  freeze: auto
+format:
+  html:
+    toc: true
+    comments:
+      hypothesis: true
+  docx: default
+  jats: default
+  pdf: default
+format-links:
+  - docx
+  - pdf
+---
+
+# Background
+
+This script uses WDFW hatchery coded wire tag (CWT) release and return data to calculate run-specific smolt-adult return (SAR), fit an SAR model, and calculate smolt-adult-survival (SAS) for Pacific salmon species. Tables are generated below that display user-specified parameters for query and analysis, location_code information associated with the query parameters set, release location for data incorporated in the SAR/SAS calculation, and the tag codes for fish included by brood year. The location_code information for associated systems/programs is based on a metadata ruleset constructed by the developers in conjunction with hatchery staff, and new queries will require additions to this ruleset for smooth data processing and model fitting.
+
+{{< embed notebooks/psalmon_sar_sas.qmd#tbl-data >}}
+
+## Query Parameters & Program Ruletset
+
+CWT-based release and recovery data are pulled from the Pacific States Marine Fisheries Commission's (PSMFC) Regional Marking Information System (RMIS) database. Release data are pulled for the query parameters set by the user (e.g., species, run, hatchery_location_code), categorized by stage-at-release (only smolts retained; method explained below), filtered for years of interest and CWT-tagged groups (i.e., tag_code_or_release_id beginning with "!" are removed), and then the tag codes remaining are used to pulled recovery data. An cwt_released column is created in the release data by combining cwt_1st_mark_count and cwt_2nd_mark_count, and julian day is calculated from first_release_date. Release counts ("cwt_released") are then aggregated by run, brood year, release location, tag code, julian day, and weight-at-release. Tag code groups that do not have one of these data types are removed. The estimated number of recoveries (number_cwt_estimated) is reported by tag_code, so only grouped data are available. Release year and recovery year are used to calculate age-at-recovery, and this age is used to filter the recovery data for adults (e.g., age-3+ in Region 5). Release and return data are then paired and categorized by release size (i.e., length and weight), date, location, and coded-wire-tag codes. Together, these filtered release and recovery data are used to calculate fate-specific SARs. A table is generated below that reports the release_location_code information for the filtered data.
+
+{{< embed notebooks/psalmon_sar_sas.qmd#tbl-data0 >}}
+
+## Length_weight
+
+To ensure all data employed in SAR/SAS calculations are smolt-release data, releases are categorized by stage using RMIS data queried by the user and information reported in the literature. Quinn (2018) reports length-at-smolt (mm) by species in Table 15.1, which summarizes data from 218 published and unpublished reports. We use these reported values to inform a release stage designation, where the avg_length and avg_weight fields queried are fit to an exponential model and the model fit is used to predict weight-at-smolt. This weight-at-smolt is then used to classify release stages, currently implemented as "smolt" if they are larger than the threshold size calculated or "fry_parr" if smaller than it. Given the query-specific nature of this analysis, if program- or system-specific data on size-at-smolt were available, those data could be used directly to inform release_stage classifications.
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat >}}
+
+# Methods & Results
+
+Smolt-adult-return is calculated for each categorized fate (i.e., hatchery, fishery, and spawning ground) of paired release-recovery data. Below, fate is categorized based on fishery coding, and then fate-specific SARs are reported. These fate-specific SARs are then used below to fit predictive SAR models, and calculate smolt-adult-survival (SAS). Fate is determined by the fishery coding reported for each recovery. Fishery codes range from 10-99, with some additional codes supplied for high seas fishery categories (800-812). Troll (10-19), net & seine (20-29), aboriginal (30-39), sport (40-49), treaty subsitence (56), test (60-69), and high seas (80-89, 800, 802-805, 812) fisheries recoveries are designated as 'fishery' fates. In addition, hatchery (50), fish trap (52), broodstock collections (53), and mixed broodstock collection/hatchery returns (57) recoveries are designated as 'hatchery' fates, and spawning ground (54) recoveries are designated as 'spawngr' fates.
+
+## TagRate_Expansion
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat4 >}}
+
+## Fate_tile_plot
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat0 >}}
+
+## SAR 
+
+After fate classification, paired release-recovery data are then used to calculate fate-specific SARs. The recovery_location_codes present in the filtered data and the estimated recoveries (number_cwt_estimated) for each recovery location are reported below. There will likely be strays present, but a 'return to rack' is desired for the hatchery to inform program performance and broodstock collection. Therefore, these stray fish are filtered out here and will be re-incorporated in a 'stray' fate module in later development. Therefore, all hatchery SAR results will be for the list of location_codes categorized as hatchery_location_code in the metadata ruleset from the Setup page. Hatcheries will often vary their rearing treatments to produce fish of different sizes at release or to release fish at different times of the season. Here, we aggregate the filtered hatchery data by the treatment variables size-at-release, release month, release site, and julian day of release. Figures and tables are displayed below to summarize the results.
+
+### Hatchery SAR Figures
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat5 >}}
+
+### Spawngr SAR Figures
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat6 >}}
+
+### Fishery SAR Figures
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat7 >}}
+
+## SAR Model
+
+SAR time series are then fit to generalized additive models to summarize trends and identify any potentially significant release treatments. Here, we fit generalized additive models assuming a quasi-binomial family and a logit link function to the time series of two components of the smolt-adult-return data: total tags released & total tags lost. Models employed fate, brood year, and weight-at-release as main effects, as well as a two-way interactions between julian day and brood year. After model fitting, figures are generated to show the results the model fit, diagnostics, and marginal effects.
+
+### Marginal Effects
+
+The marginal effects from the model fit are displayed below.
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat10 >}}
+
+### Proportion-at-fate
+
+Smolt-adult survival (SAS) represents the survival of a release group when considering all of their possible fates. The performance of a program will depend on how well the intended fate of those fish matches up with the observed proportion-at-fate. Here, we take release and return data from above and use these data collectively to calculate SAS as the number of fish that were recovered divided by the number released. Further work is needed to incorporate strays into this calculation.
+
+{{< embed notebooks/psalmon_sar_sas.qmd#fig-dat11 >}}
+
+# References {.unnumbered}

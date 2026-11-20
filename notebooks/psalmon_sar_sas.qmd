@@ -1,15 +1,14 @@
 ---
-title: "Pacific Salmon SAR & SAS Estimator"
+title: "SARS Calculator"
 author: "Kris Warner & Matt Siskey"
-lightbox: true
-format: 
-  dashboard:
-    scrolling: true
-    embed-resources: true
-    self-contained-math: true
-    # code-tools: true
-    # code-fold: true
-    # code-overflow: wrap
+format:
+  html:
+    toc: true
+    comments:
+      hypothesis: true
+  docx: default
+  jats: default
+  pdf: default
 params:
   smolt: true
   sp: "1"
@@ -20,7 +19,6 @@ params:
   yr_end: 2021
   adult_age: 3
   cwt_expanded: "sar_total" # sar_total, sar_cwt
-  # loc_based: TRUE # FALSE
 ---
 
 # Setup
@@ -237,7 +235,6 @@ fpp_g_conversion %>%
 ### Length_weight
 
 ```{r, message=FALSE, warning=FALSE}
-#| layout-ncol: 1
 #| label: fig-dat
 #| fig-cap: 
 #|   - "Length-weight relationship used to determine weight-at-smolt via reported lenght-at-smolt (Quinn, 2018). The red-dashed vertical line shows the species-specific size used for the weight-at-smolt conversion. Facets are split by run, and outliers are removed before model fitting and prediction."
@@ -245,27 +242,26 @@ fpp_g_conversion %>%
 ####################################
 ### Length-weight relationship for determining stage
 
-# set plotting theme
-theme_set(theme_minimal())
+# # set plotting theme
+# theme_set(theme_minimal())
+# 
+# ### length-weight relationship of unfiltered data
+# len_wt <- ggplot(len_wt_df, aes(x=avg_length, y=avg_weight, group=as.factor(first_release_date_month), color=as.factor(first_release_date_month))) + 
+#             # geom_line(aes(x = avg_length, y = prediction*100,group=first_release_date_month), linewidth=1) +  
+#             geom_point(pch=21)+
+#             geom_vline(xintercept=smolt_mm, color="red",linetype="dashed",alpha=0.3)+
+#             # facet_wrap(.~run, ncol=1)+
+#             labs(x="Mean Length (mm)", y="Mean Weight (g)", color="Release Month")
+# ggplotly(len_wt)
 
-### length-weight relationship of unfiltered data
-len_wt <- ggplot(len_wt_df, aes(x=avg_length, y=avg_weight, group=as.factor(first_release_date_month), color=as.factor(first_release_date_month))) + 
+ggplot(len_wt_df, aes(x=avg_length, y=avg_weight, group=as.factor(first_release_date_month), color=as.factor(first_release_date_month))) + 
             # geom_line(aes(x = avg_length, y = prediction*100,group=first_release_date_month), linewidth=1) +  
             geom_point(pch=21)+
             geom_vline(xintercept=smolt_mm, color="red",linetype="dashed",alpha=0.3)+
             # facet_wrap(.~run, ncol=1)+
             labs(x="Mean Length (mm)", y="Mean Weight (g)", color="Release Month")
-ggplotly(len_wt)
 
 ```
-
-## References {height="200px"}
-
-::: {.card title="References"}
-Independent Scientific Advisory Board (ISAB). 2025. Challenges and opportunities for improved estimation, interpretation, and use of smolt-to-adult return (SAR) and survival (SAS) metrics for salmon and steelhead in the Columbia River Basin. Report ISAB 2025-1. Northwest Power and Conservation Council, Portland, Oregon.
-
-Quinn, T.P. 2018. The behavior and ecology of Pacific salmon and trout. Second Edition. University of Washington Press. ISBN: 9780295743332.
-:::
 
 # Results
 
