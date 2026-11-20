@@ -1,28 +1,33 @@
 fate_plots <-function(fate_type, rec_type){
   
   if(fate_type!="fishery"){
+    sar_df_fates_fig <-filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type)
+    
     # sar by brood year & mean wt
-    rel_size <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
+    rel_size <-ggplot(data=sar_df_fates_fig,aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(avg_weight)))+
                  geom_boxplot(outlier.shape = NA)+
                  geom_jitter(pch=21,size=2,width = 0.1,height=0, alpha=0.6)+
                  # geom_point(pch=21,size=2, alpha=0.6)+
                  labs(x = "Brood Year", y = "SAR (%)", fill = "Mean Weight (g)")+
+                 # scale_x_discrete(breaks=seq(min(sar_df_fates_fig$brood_year), max(sar_df_fates_fig$brood_year), 2))+
                  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
     
     # sar by brood year & release month
-    rel_month <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
+    rel_month <-ggplot(data=sar_df_fates_fig,aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(first_release_date_month)))+
                   geom_boxplot(outlier.shape = NA)+
                   geom_jitter(pch=21,size=2,width = 0.1,height=0, alpha=0.6)+
                   # geom_point(pch=21,size=2, alpha=0.6)+
                   labs(x = "Brood Year", y = "SAR (%)", fill = "Release Month")+
+                  # scale_x_discrete(breaks=seq(min(sar_df_fates_fig$brood_year), max(sar_df_fates_fig$brood_year), 2))+
                   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     
     # sar by release location
-    rel_loc <-ggplot(data=filter(sar_df_fates, fate == fate_type & recovery_location_code %in% rec_type),aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
+    rel_loc <-ggplot(data=sar_df_fates_fig,aes(x=as.factor(brood_year),y=sar*100, fill=as.factor(release_location_code)))+
                 geom_boxplot(outlier.shape = NA)+
                 geom_jitter(pch=21,size=2,width = 0.1,height=0, alpha=0.6)+
                 # geom_point(pch=21,size=2, alpha=0.6)+
                 labs(x = "Brood Year", y = "SAR (%)", fill = "Release Site")+
+                # scale_x_discrete(breaks=seq(min(sar_df_fates_fig$brood_year), max(sar_df_fates_fig$brood_year), 2))+
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     
     # sar by release timing (jday)
@@ -63,10 +68,12 @@ fate_plots <-function(fate_type, rec_type){
     #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
     # 
     ### mainstem vs. trib
+    # stem_trib_fishery <-ggplot(data=filter(fishery_recover_df, water_type=="F"), aes(y=as.factor(stem_trib),x=recoveries, fill=as.factor(fishery_type)))+
     stem_trib_fishery <-ggplot(data=filter(fishery_recover_df, water_type=="F"), aes(y=as.factor(stem_trib),x=log(recoveries), fill=as.factor(fishery_type)))+
       geom_boxplot(outlier.shape = NA)+
       geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
       scale_x_log10() +
+      # facet_grid(brood_year~.)+
       labs(y = "Fresh Fishery", x = "log(recoveries)", fill = "Fresh Fishery")+
       theme(legend.position = "top") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
@@ -138,7 +145,7 @@ fate_plots <-function(fate_type, rec_type){
     state_fishery <-ggplot(data=sar_df_state, aes(x=as.factor(state_name),y=sar*100, fill=as.factor(avg_weight)))+
       geom_boxplot(outlier.shape = NA)+
       geom_jitter(pch=21,size=2,width = 0.2, alpha=0.6)+
-      labs(x = "State", y = "SAR (%)", fill = "State")+
+      labs(x = "State", y = "SAR (%)", fill = "Weight")+
       theme(legend.position="top")+
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Angle x-axis labels for readability
 
