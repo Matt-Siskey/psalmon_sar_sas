@@ -1,14 +1,6 @@
 ---
 title: "SARS Calculator"
 author: "Kris Warner & Matt Siskey"
-format:
-  html:
-    toc: true
-    comments:
-      hypothesis: true
-  docx: default
-  jats: default
-  pdf: default
 params:
   smolt: true
   sp: "1"
@@ -16,7 +8,7 @@ params:
   system: "r5_lewis"
   yr_trim: true
   yr_start:  1970
-  yr_end: 2021
+  yr_end: 2020
   adult_age: 3
   cwt_expanded: "sar_total" # sar_total, sar_cwt
 ---

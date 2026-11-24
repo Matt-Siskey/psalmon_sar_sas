@@ -27,15 +27,11 @@ project:
 execute:
   freeze: auto
 format:
+  pdf:
+    toc: true
   html:
     toc: true
-    comments:
-      hypothesis: true
-  docx: default
-  jats: default
-  pdf: default
 format-links:
-  - docx
   - pdf
 ---
 
